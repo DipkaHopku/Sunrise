@@ -1,0 +1,2 @@
+#TargetFrameworkVersion=v4.0:PlatformToolSet=v141:EnableManagedIncrementalBuild=false:VCToolArchitecture=Native32Bit:WindowsTargetPlatformVersion=8.1
+Release Static|Win32|C:\Users\Alexander\source\repos\Sunrise\External\freetype-2.10.0\builds\windows\vc2010\|
