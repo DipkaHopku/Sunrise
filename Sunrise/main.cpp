@@ -58,6 +58,7 @@ int main(void) {
 		//просто без иконки
 		cout << e.what() << ": icon with filename '" << ICON_FILENAME << "' is not available" << endl;
 	}*/
+
 	GLFWimage icons[1];
 	icons[0].pixels = SOIL_load_image(ICON_FILENAME, &icons[0].width, &icons[0].height, NULL, SOIL_LOAD_AUTO);
 	if (icons[0].pixels != nullptr) {

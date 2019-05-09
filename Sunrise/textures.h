@@ -3,7 +3,8 @@
 enum TextureNames {
 	TEST2,
 	TEST3,
-	TEST4
+	TEST4,
+	TEST5
 };
 
 void loadTextures();

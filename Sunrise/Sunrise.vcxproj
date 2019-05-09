@@ -76,11 +76,11 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.bin.WIN32\include;$(SolutionDir)External\glew-2.1.0\include;$(SolutionDir)External\Simple OpenGL Image Library\src;$(SolutionDir)External\freetype-2.10.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.bin.WIN32\include;$(SolutionDir)External\glew-2.1.0\include;$(SolutionDir)External\Simple OpenGL Image Library\src;$(SolutionDir)External\freetype-2.10.0\include;$(SolutionDir)External\json;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)External/glfw-3.3.bin.WIN32/lib-vc2017;$(SolutionDir)External\glew-2.1.0\lib\Release\Win32;$(SolutionDir)External\Simple OpenGL Image Library\lib;$(SolutionDir)External\freetype-2.10.0\objs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.bin.WIN32\lib-vc2017;$(SolutionDir)External\glew-2.1.0\lib\Release\Win32;$(SolutionDir)External\Simple OpenGL Image Library\lib;$(SolutionDir)External\freetype-2.10.0\objs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;opengl32.lib;SOIL.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
@@ -144,9 +144,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="textures.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="textures.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Sunrise.rc" />

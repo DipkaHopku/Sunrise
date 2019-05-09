@@ -83,5 +83,5 @@ void drawTexture(int xPos, int yPos, TextureNames textureName) {
 		glEnd();
 
 		glDisable(GL_TEXTURE_2D);
-	} else cout << "Error: texture '" << textureName << "' hasn`t properties" << endl;
+	} //else cout << "Error: texture '" << textureName << "' hasn`t properties" << endl;
 }
