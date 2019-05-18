@@ -1,31 +1,8 @@
-//#include <windows.h>
-//#include <GLFW/glfw3.h>
-//#include <GLAPI // and GLAPIENTRY
-//#define GLAPI extern
-#include <GL/glew.h>
-//#include <GL/gl.h>
-#include <SOIL.h>
-
-#include <iostream>
-#include <string>
-#include <unordered_map>
-#include <map>
-//#include <ctime>
-//#include <chrono>
-
-/*#include <stdio.h>
-#include <windows.h>
-#include <excpt.h>*/
-
-//#include <csignal>
-
 #include "textures.h"
 
-using namespace std;
 //using namespace std::chrono;
 
-std::ostream& operator << (std::ostream& os, const TextureName& obj)
-{
+std::ostream& operator << (std::ostream& os, const TextureName& obj) {
 	os << static_cast<std::underlying_type<TextureName>::type>(obj);
 	return os;
 }
@@ -33,11 +10,13 @@ std::ostream& operator << (std::ostream& os, const TextureName& obj)
 //unordered_map<const TextureNames, const char* const> textureFilenames = { //нужна hash функция https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
 
 //const map<const TextureNames, const char* const> textureFilenames = {
-map<const TextureName, const string> textureFilenames = {
-		{TextureName::TEST1,"textures/test.png"},
-		{TextureName::TEST2,"textures/test2.png"},
-		{TextureName::TEST3,"textures/test3.png"},
-		{TextureName::TEST4,"textures/test2.png"}
+
+const map<const TextureName, const string> textureFilenames = {
+	{TextureName::MAIN_MENU_BACKGROUND, "resources/textures/mainMenuBackground.png"},
+	{TextureName::TEST1, "resources/textures/test.png"},
+	{TextureName::TEST2, "resources/textures/test2.png"},
+	{TextureName::TEST3, "resources/textures/test3.png"},
+	{TextureName::WTF_CAT, "resources/textures/wtf_cat_test.png"}
 };
 
 class TextureProperties {
@@ -55,18 +34,18 @@ public:
 	}*/
 };
 
-map<TextureName, TextureProperties> textureData;
+map<TextureName, TextureProperties> texturesData;
 
 //---------------------------------------------------------------------------------------------
 //functions
-void loadTexture(TextureName textureName) {
-	//try {
-	//__try {
+
+void loadTexture(const TextureName textureName) {
 	TextureProperties textureProperties;
 	//auto data = SOIL_load_image(textureFilenames.find(textureName)->second, &textureProperties.width, &textureProperties.height, NULL, SOIL_LOAD_AUTO);
-	auto _data = SOIL_load_image(textureFilenames[textureName].c_str(), &textureProperties.width, &textureProperties.height, NULL, SOIL_LOAD_AUTO);
+	//auto _data = SOIL_load_image(textureFilenames[textureName].c_str(), &textureProperties.width, &textureProperties.height, NULL, SOIL_LOAD_AUTO);
+	auto _data = SOIL_load_image(textureFilenames.at(textureName).c_str(), &textureProperties.width, &textureProperties.height, NULL, SOIL_LOAD_AUTO);
 	if (_data != nullptr) {
-		textureProperties.ID = SOIL_create_OGL_texture(_data, textureProperties.width, textureProperties.height, 4, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO);
+		textureProperties.ID = SOIL_create_OGL_texture(_data, textureProperties.width, textureProperties.height, 4, SOIL_CREATE_NEW_ID, SOIL_FLAG_DDS_LOAD_DIRECT); //SOIL_FLAG_DDS_LOAD_DIRECT нет искажения текстур, при это SOIL_FLAG_POWER_OF_TWO оно насильно меняет ширину и высоту на степень двойки и изза этого появляется неотключаемое размытие
 
 		bool** controlField = new bool*[textureProperties.width];
 		for (int x = 0; x < textureProperties.width; x++) {
@@ -74,34 +53,23 @@ void loadTexture(TextureName textureName) {
 			for (int y = 0; y < textureProperties.height; y++) {
 				bool isFilledPixel = (int)_data[(x + y * textureProperties.width) * 4 + 3] != 0;
 				controlField[x][y] = isFilledPixel;
+
+				/*if (textureName == TextureName::TEST3 && y<5 && x < 6) {
+					cout << (float)_data[(y + x * textureProperties.width) * 4] / 255;
+					cout << (float)_data[(y + x * textureProperties.width) * 4 + 1] / 255;
+					cout << (float)_data[(y + x * textureProperties.width) * 4 + 2] / 255;
+					cout << (float)_data[(y + x * textureProperties.width) * 4 + 3] / 255;
+					cout << '-';
+				}*/
 			}
+			//if (textureName == TextureName::TEST3 && x<6) cout << endl;
 		}
 
 		textureProperties.controlField = controlField;
 
 		SOIL_free_image_data(_data);
 
-		textureData.insert(pair<TextureName, TextureProperties>(textureName, textureProperties));
-		
-		/*if (textureName != TEST3) return;
-		for (int y = 0; y < textureProperties.height; y++) {
-			for (int x = 0; x < textureProperties.width; x++) {
-				cout << (int)controlField[x][y];
-			}
-			cout << endl;
-		}*/
-
-		/*if (textureName == TEST3) {
-			for (int i = 0; i < textureProperties.width * 4; i = i + 4) {
-				//if ((int)data[i + 3] != 204) continue;
-				cout << 'r' << (int)_data[i];
-				cout << 'g' << (int)_data[i + 1];
-				cout << 'b' << (int)_data[i + 2];
-				cout << 'a' << (int)_data[i + 3];
-				cout << ' ';
-			}
-			cout << endl;
-		}*/
+		texturesData.insert(pair<TextureName, TextureProperties>(textureName, textureProperties));
 
 		/*unsigned int fbo;
 		glGenFramebuffers(1, &fbo);
@@ -125,12 +93,6 @@ void loadTexture(TextureName textureName) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		
-		
-
-		
-		
 		
 		
 		//glReadBuffer(GL_COLOR_ATTACHMENT0); //_EXT
@@ -158,99 +120,34 @@ void loadTexture(TextureName textureName) {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDeleteFramebuffers(1, &fbo);
 		}*/
-	} else cout << "NullPointerException: texture '" << textureName << "' with filename '" << textureFilenames[textureName] << "' is not available" << endl;
-
-	/*else throw exception("NullPointerException");
-	}*/
-	/*__except (filter(GetExceptionCode(), GetExceptionInformation())) {
-		_exception_info
-	}*/
-	/*catch (exception &e) {
-	//catch (...) {
-		//cout << textureName << " fail with exception: " << e.what() << endl;
-		cout << e.what() << ": texture '"<< textureName << "' with filename '" << textureFilenames[textureName] << "' is not available" << endl;
-		//log("Exception thrown:  %s", e.what());
-	}*/
+	} else cout << "NullPointerException: texture '" << textureName << "' with filename '" << textureFilenames.at(textureName) << "' is not available" << endl;
 }
 
 void loadTextures() {
 	for (const auto &textureFilename : textureFilenames) {
 		loadTexture(textureFilename.first);
-
-		/*if (textureFilename.first == TEST2) {
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-
-			cout << "TEST2" << endl;
-			// create a texture object
-			GLuint textureId = textureData.find(textureFilename.first)->second.ID;
-			//glGenTextures(1, &textureId);
-			glBindTexture(GL_TEXTURE_2D, textureId);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 600, 400, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-			glBindTexture(GL_TEXTURE_2D, 0);
-
-			// create a renderbuffer object to store depth info
-			GLuint rboId;
-			glGenRenderbuffers(1, &rboId);
-			glBindRenderbuffer(GL_RENDERBUFFER, rboId);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 600, 400);
-			glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-			// create a framebuffer object
-			GLuint fboId;
-			glGenFramebuffers(1, &fboId);
-			glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-
-			// attach the texture to FBO color attachment point
-			glFramebufferTexture2D(GL_FRAMEBUFFER,        // 1. fbo target: GL_FRAMEBUFFER
-				GL_COLOR_ATTACHMENT0,  // 2. attachment point
-				GL_TEXTURE_2D,         // 3. tex target: GL_TEXTURE_2D
-				textureId,             // 4. tex ID
-				0);                    // 5. mipmap level: 0(base)
-
-// attach the renderbuffer to depth attachment point
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER,      // 1. fbo target: GL_FRAMEBUFFER
-				GL_DEPTH_ATTACHMENT, // 2. attachment point
-				GL_RENDERBUFFER,     // 3. rbo target: GL_RENDERBUFFER
-				rboId);              // 4. rbo ID
-
-// check FBO status
-			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-			if (status != GL_FRAMEBUFFER_COMPLETE)
-				cout << "fboUsed = false;" << endl;
-
-			// switch back to window-system-provided framebuffer
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-			// set rendering destination to FBO
-			glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-
-			// clear buffers
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			// draw a scene to a texture directly
-			drawTexture(10, 10, TEST2);
-
-			// unbind FBO
-			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}*/
 	}
 }
 
-void drawTexture(int xPos, int yPos, TextureName textureName) {
+void drawTexture(const int xPos, const int yPos, const TextureName textureName) {
 	//auto start2 = clock();
-	auto _textureData = textureData.find(textureName);
-	if (_textureData != textureData.end()) {
+	auto _textureData = texturesData.find(textureName);
+	if (_textureData != texturesData.end()) {
 		//TextureProperties textureProperties = textureData[textureName];
 		TextureProperties _textureProperties = _textureData->second;
+
+		glColor4f(1, 1, 1, 1); //чтобы текстура имела натуральный цвет
+
 		glEnable(GL_TEXTURE_2D);
 		//auto start = clock();
+
 		glBindTexture(GL_TEXTURE_2D, _textureProperties.ID); //чем меньше колво айди - тем лучше
+
+		/*glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);//выход текстурных координат за пределы 0-1
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //сглаживание при уменьшении
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении //NEAREST - по ближайшему пикселю*/
+
 		glBegin(GL_QUADS); //устаревший интерфейс, НО время выполнения функции всё ещё менее 1 миллисекунды
 		glTexCoord2i(0, 0); glVertex2i(xPos, yPos); //i - это int
 		glTexCoord2i(1, 0); glVertex2i(xPos + _textureProperties.width, yPos);
@@ -263,9 +160,61 @@ void drawTexture(int xPos, int yPos, TextureName textureName) {
 		glTexCoord2f(0.5f, 1); glVertex2i(xPos, yPos + textureProperties.height);*/
 		glEnd();
 		//cout << "processing: " << clock() - start << endl; //не более 1 миллисекунды
+
+		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 		//cout << "processing2: " << clock() - start2 << endl; //не более 1 миллисекунды
 	} //else cout << "Error: texture '" << textureName << "' hasn`t properties" << endl;
+}
+
+void drawScaledTexture(
+	const int xPos, const int yPos,
+	const TextureName textureName,
+	const TextureScalingByHeightRatioType scalingByHeightRatioType, 
+	const float scalingHeightFactor
+) {
+	auto _textureData = texturesData.find(textureName);
+	if (_textureData != texturesData.end()) {
+		TextureProperties _textureProperties = _textureData->second;
+
+		int _width, _height;
+		float _ratio;
+
+		switch (scalingByHeightRatioType) {
+		case TextureScalingByHeightRatioType::PIXELS_NUMBER:
+			_height = scalingHeightFactor;
+			_ratio = (float) _height / _textureProperties.height;
+			_width = _textureProperties.width * _ratio;
+			break;
+		case TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR:
+			_ratio = scalingHeightFactor;
+			_height = _textureProperties.height * _ratio;
+			_width = _textureProperties.width * _ratio;
+			break;
+		default: //никогда не заходит?
+			cerr << "Error: Unknown ratio type of texture scaling by height" << endl;
+			return;
+			break;
+		}
+
+		glColor4f(1, 1, 1, 1); //чтобы текстура имела натуральный цвет
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //сглаживание при уменьшении
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении //NEAREST - по ближайшему пикселю
+
+		glBegin(GL_QUADS);
+		glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
+		glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos);
+		glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height);
+		glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height);	
+		glEnd();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
+	}
 }
 
 /*void drawTexture(int xPos, int yPos, TextureNames textureName) {
@@ -279,17 +228,4 @@ void drawTexture(int xPos, int yPos, TextureName textureName) {
 	glDrawPixels(textureProperties.width, textureProperties.height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	cout << "processing: " << clock() - start << endl; //13 миллисекунд
 	SOIL_free_image_data(data);
-}*/
-
-/*int _loadTexture(TextureNames textureName) {
-	//try {
-	//__try {
-	TextureProperties textureProperties;
-	//auto data = SOIL_load_image(textureFilenames.find(textureName)->second, &textureProperties.width, &textureProperties.height, NULL, SOIL_LOAD_AUTO);
-	auto data = SOIL_load_image(textureFilenames[TEST2].c_str(), &textureProperties.width, &textureProperties.height, NULL, SOIL_LOAD_AUTO);
-	textureProperties.ID = SOIL_create_OGL_texture(data, textureProperties.width, textureProperties.height, 4, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO);
-	SOIL_free_image_data(data);
-	textureData.insert(pair<TextureNames, TextureProperties>(textureName, textureProperties));
-
-	return textureProperties.ID;
 }*/

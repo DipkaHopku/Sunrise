@@ -27,6 +27,9 @@
     <ClCompile Include="gameplay.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="fonts.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -41,6 +44,9 @@
     <ClInclude Include="gameplay.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="fonts.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Sunrise.rc">
@@ -48,7 +54,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\Textures\Sunrise.ico">
+    <Image Include="..\Resource\Sunrise.ico">
       <Filter>Файлы ресурсов</Filter>
     </Image>
   </ItemGroup>
