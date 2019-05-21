@@ -25,13 +25,18 @@ using std::endl;
 
 #define MAIN_MENU_TITLE "Sunrise"
 
-const float buttonColorRGB[3] = {180.f/255, 0.f/255, 255.f/255};
+const float BUTTON_COLOR_RGB[4] = {0.f/255, 0.f/255, 0.f/255, 63.f / 255, };
 
 enum class ButtonType {
-	START, //СОЗДАНИЕ ПОЛЯ, РАССТАНОВКА ПЕРСОВ
+	START,
 	LOAD,
 	OPTIONS,
 	EXIT
+};
+
+enum class LabelType {
+	TITLE,
+	FULLSCREEN
 };
 
 enum class Orientation {
@@ -39,23 +44,24 @@ enum class Orientation {
 	HORIZONTAL
 };
 
-enum class VerticalPosition {
+enum class VerticalAlign {
 	TOP,
 	MIDDLE,
 	BOTTOM
 };
 
-enum class HorizontalPosition {
+enum class HorizontalAlign {
 	LEFT,
 	MIDDLE,
 	RIGHT
 };
 
-class ButtonProperties {
-/*public:
-	string title;*/
+/*class ButtonProperties { //TODO мб лучше спрятать
+//public:
+	//string title;
 private:
 	string _title;
+	FontName fontName;
 
 public:
 	void(*callback)();
@@ -63,9 +69,11 @@ public:
 	ButtonProperties(string, void(*)());
 
 	string getTitle() const;
-};
+};*/
 
-class UserInterfaceItem;
+class UIItem;
+
+class ActiveUIItem;
 
 //MenuItemContainer* menuItemContainer;
 
@@ -76,7 +84,7 @@ class ControlField {
 private:
 	int _displayWidth = 0;
 	int _displayHeight = 0;
-	UserInterfaceItem*** _controlField = nullptr;
+	ActiveUIItem*** _controlField = nullptr;
 	int _windowWidth = 0;
 	int _windowHeight = 0;
 
@@ -99,92 +107,124 @@ public:
 	//#2 - height of window
 	void getWindowSize(int*, int*) const;
 
+	//установка активной зоны элемента интерфейса на экране приложения
+	//arguments:
+	//#1 - xPos of active UI item left side
+	//#2 - width of active UI item
+	//#3 - yPos of active UI item top side
+	//#4 - height of active UI item
+	//#5 - active UI item pointer
+	void setActiveUIItemControlField(int, int, int, int, ActiveUIItem*);
+
+	void triggerActiveUIItemOnClickCallbackAtPoint(int, int);
+
 	//подготовка к отрисовке следующего кадра. результат - нажатие кнопок мыши не провоцирует начала выполнения функций активных элементов интерфейса. на новом кадре положения элементов интрефейсов может меняться
 	void clearControlField();
 };
 
 //---------------------------------------------------------------------------------------------
+//class UserInterface declaration
+
+class UserInterface {
+private:
+	UIItemsContainer* _UIItemContainer = nullptr;
+	int _windowWidth = 0;
+	int _windowHeight = 0;
+
+	UserInterface();
+	~UserInterface();
+	UserInterface(const UserInterface&) = delete;
+	UserInterface& operator=(const UserInterface&) = delete;
+public:
+	static UserInterface& Instance();
+
+	Orientation _orientation = Orientation::VERTICAL;
+	VerticalAlign _verticalAlign = VerticalAlign::MIDDLE;
+	HorizontalAlign _horizontalAlign = HorizontalAlign::MIDDLE;
+
+	void setUIItemsContainer(UIItemsContainer*);
+
+	void drawUserInterface();
+};
+
+//---------------------------------------------------------------------------------------------
 //class UserInterfaceItem declaration
 
-class UserInterfaceItem {
+class UIItem {
 protected:
-	int _xPos, _yPos;
-	int _width, _height;
-	int _paddingSize;
+	int _xPos = 0, _yPos = 0;
+	int _width = 0, _height = 0;
+	int _paddingSize = 0;
+	int _marginSize = 0; //работают только по оси ориентации контейнера
 
 public:
-	virtual void drawUIElement() = 0; // const = 0; TODO
+	//получение размеров элемента интерфейса
+	//arguments:
+	//#1 - width
+	//#2 - height
+	//#3 - marginSize
+	virtual void getUIItemSizes(int*, int*, int*) const = 0;
+	virtual void drawUIItem() const = 0; // const = 0; TODO
+};
+
+//---------------------------------------------------------------------------------------------
+//class ActiveUserInterfaceItem declaration
+
+class ActiveUIItem : public UIItem {
+protected:
+	//унаследованные:
+	//int _xPos = 0, _yPos = 0;
+	//int _width = 0, _height = 0;
+	//int _paddingSize = 0;
+	//int _marginSize = 0;
+
+	void(*_onClickCallback)();
+public:
 	virtual void onClick() const = 0;
 };
 
 //---------------------------------------------------------------------------------------------
 //class MenuItemContainer declaration
 
-class MenuItemContainer : public UserInterfaceItem {
+//class UIItemsContainer : private UIItem { //нельзя преобразовывать указатель в UIItem
+class UIItemsContainer : public UIItem {
 private:
+	//унаследованные:
+	//int _xPos = 0, _yPos = 0;
+	//int _width = 0, _height = 0;
+	//int _paddingSize = 0;
+	//int _marginSize = 0;
+
 	Orientation _orientation;
-	VerticalPosition _verticalPosition;
-	HorizontalPosition _horizontalPosition;
+	VerticalAlign _verticalAlign;
+	HorizontalAlign _horizontalAlign;
+	//bool _scrollable = false;
 
-	vector<UserInterfaceItem*> menuItems;
+	//UIItemsContainer* _parentContainer = nullptr;
+	vector<UIItem*> _UIItems;
 
 public:
-	MenuItemContainer(Orientation, VerticalPosition, HorizontalPosition) noexcept;
-	~MenuItemContainer();
+	//UIItemsContainer(UIItemsContainer*, Orientation, VerticalAlign, HorizontalAlign) noexcept;
+	UIItemsContainer(Orientation, VerticalAlign, HorizontalAlign) noexcept;
+	~UIItemsContainer();
 
-	//void drawUIElement() const;
-	void drawUIElement();
-	void onClick() const;
+	void getUIItemSizes(int*, int*, int*) const; //скрыта
 
-	void addMenuItem(UserInterfaceItem* const menuItem);
-};
+	void drawUIItem() const;
+	//void drawUIElement();
+	//void onClick() const;
 
-//---------------------------------------------------------------------------------------------
-//class Label declaration
+	//UIItemsContainer* _parentContainer = nullptr;
 
-class Label : public UserInterfaceItem {
-private:
-	string _title;
-	int _textSize;
-public:
-	Label(string, int) noexcept;
-	~Label();
+	void addUIItem(UIItem* const menuItem);
 
-	//void drawUIElement() const;
-	void drawUIElement();
-	void onClick() const;
-};
-
-//---------------------------------------------------------------------------------------------
-//class Button declaration
-
-class Button : public UserInterfaceItem {
-private:
-	string _title;
-	void(*_callback)();
-	int _marginSize;
-	int _textSize;
-public:
-
-	/*
-	arguments:
-	#1 - ButtonProperties class with title and callback
-	#3 - textSize
-	#4 - marginSize
-	#5 - paddingSize
-	*/
-	Button(ButtonProperties, int, int, int) noexcept;
-	~Button();
-
-	//void drawUIElement() const;
-	void drawUIElement();
-	void onClick() const;
+	//void updateContainerProperties(); //скрыта
 };
 
 //---------------------------------------------------------------------------------------------
 //fuctions declaration
 
-MenuItemContainer* createMainMenu();
+UIItemsContainer* createMainMenu();
 
 //---------------------------------------------------------------------------------------------
 //callbacks declaration

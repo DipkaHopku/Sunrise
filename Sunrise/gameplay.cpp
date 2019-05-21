@@ -1,8 +1,8 @@
 #include "gameplay.h"
 
-static ApplicationState applicationState = ApplicationState::MAIN_MENU;
+static ApplicationState applicationState = ApplicationState::APPLICATION_LAUNCH;
+static ApplicationState applicationStateNext = ApplicationState::MAIN_MENU;
 
-Button* test_button = new Button(ButtonProperties("Start", nullptr), 200, 5, 5);
 //---------------------------------------------------------------------------------------------
 //functions
 
@@ -15,8 +15,6 @@ void gameplayProcessing() {
 	switch (applicationState) {
 	case ApplicationState::MAIN_MENU :
 		drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
-		test_button->drawUIElement();
-		//drawTexture(10, 10, TextureName::WTF_CAT);
 		break;
 
 	case ApplicationState::BATTLE :

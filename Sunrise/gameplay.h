@@ -15,6 +15,7 @@ using std::cout;
 using std::endl;
 
 enum class ApplicationState {
+	APPLICATION_LAUNCH,
 	MAIN_MENU,
 	BATTLE,
 	LOAD_MENU,

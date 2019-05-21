@@ -24,12 +24,13 @@ using std::endl;
 //---------------------------------------------------------------------------------------------
 //global variables and types
 
-const float buttonFontColorRGB[3] = { 0.f / 255, 0.f / 255, 0.f / 255 };
+const float TITLE_FONT_COLOR_RGB[3] = { 255.f / 255, 255.f / 255, 255.f / 255 };
+const float BUTTON_FONT_COLOR_RGB[3] = { 255.f / 255, 255.f / 255, 255.f / 255 }; //buttonFontColorRGB
 
 enum class FontName {
 	TITLE,
 	BUTTON,
-	TEXT
+	SIMPLE_TEXT
 };
 
 //map<FontName, FontProperties> fontsData;
@@ -38,6 +39,18 @@ enum class FontName {
 //functions
 
 void freeTypeInit(int);
+
+void getStringProperties(FontName, string, int*, int*);
+
+/*
+arguments:
+#1 - xPos,
+#2-  yPos,
+#3 - fontName,
+#4 - string,
+#5 - RGB-color vector
+*/
+void drawString(int, int, FontName, string, const float[3]);
 
 /*
 arguments:
