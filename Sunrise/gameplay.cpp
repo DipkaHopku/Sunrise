@@ -7,14 +7,15 @@ static ApplicationState applicationStateNext = ApplicationState::MAIN_MENU;
 //functions
 
 void gameplayProcessing() {
-	ControlField::Instance().clearControlField();
+	UserInterface::Instance().clearControlField();
 
 	int _windowWidth, _windowHeight;
-	ControlField::Instance().getWindowSize(&_windowWidth, &_windowHeight);
+	UserInterface::Instance().getWindowSize(&_windowWidth, &_windowHeight);
 
 	switch (applicationState) {
 	case ApplicationState::APPLICATION_LAUNCH:
-		UserInterface::Instance().setUIItemsContainer(createMainMenu());
+		//UserInterface::Instance().setUIItemsContainer(createMainMenu());
+		createMainMenu();
 
 		applicationState = ApplicationState::MAIN_MENU;
 

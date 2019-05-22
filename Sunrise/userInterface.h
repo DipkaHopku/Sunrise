@@ -82,9 +82,24 @@ class UIItemsContainer;
 //MenuItemContainer* menuItemContainer;
 
 //---------------------------------------------------------------------------------------------
-//class ControlField declaration
+//class Drawer declaration
 
-class ControlField {
+static class UIItemDrawer {
+	friend class UserInterface;
+	friend class UIItemsContainer;
+
+private:
+	static void drawUIItem(UIItem*);
+
+	static void setPosition(UIItem* UIItem, int, int);
+
+	static void updateContainerProperties(UIItemsContainer*);
+};
+
+//---------------------------------------------------------------------------------------------
+//class UserInterface declaration
+
+class UserInterface {
 private:
 	int _displayWidth = 0;
 	int _displayHeight = 0;
@@ -92,12 +107,22 @@ private:
 	int _windowWidth = 0;
 	int _windowHeight = 0;
 
-	ControlField();
-	~ControlField();
-	ControlField(const ControlField&) = delete;
-	ControlField& operator=(const ControlField&) = delete;
+	Orientation _orientation = Orientation::VERTICAL;
+	HorizontalAlign _horizontalAlign = HorizontalAlign::MIDDLE;
+	VerticalAlign _verticalAlign = VerticalAlign::MIDDLE;
+
+	UIItemsContainer* _UIItemsContainer = nullptr;
+	//int _windowWidth = 0;
+	//int _windowHeight = 0;
+
+	UserInterface();
+	~UserInterface();
+	UserInterface(const UserInterface&) = delete;
+	UserInterface& operator=(const UserInterface&) = delete;
+
+	void updateContainerProperties();
 public:
-	static ControlField& Instance();
+	static UserInterface& Instance();	
 
 	//установка размера дисплея в пикселях. Функция вызывается только в момент запуска приложения
 	void setDisplaySize(int, int);
@@ -127,46 +152,10 @@ public:
 
 	//debug
 	//void __drawControlField();
-};
-
-//---------------------------------------------------------------------------------------------
-//class Drawer declaration
-
-static class UIItemDrawer {
-	friend class UserInterface;
-	friend class UIItemsContainer;
-
-private:
-	static void drawUIItem(UIItem*);
-
-	static void setPosition(UIItem* UIItem, int, int);
-
-	static void updateContainerProperties(UIItemsContainer*);
-};
-
-//---------------------------------------------------------------------------------------------
-//class UserInterface declaration
-
-class UserInterface {
-private:
-	Orientation _orientation = Orientation::VERTICAL;
-	VerticalAlign _verticalAlign = VerticalAlign::MIDDLE;
-	HorizontalAlign _horizontalAlign = HorizontalAlign::MIDDLE;
-
-	UIItemsContainer* _UIItemContainer = nullptr;
-	//int _windowWidth = 0;
-	//int _windowHeight = 0;
-
-	UserInterface();
-	~UserInterface();
-	UserInterface(const UserInterface&) = delete;
-	UserInterface& operator=(const UserInterface&) = delete;
-public:
-	static UserInterface& Instance();	
 
 	void setUIItemsContainer(UIItemsContainer*);
 
-	void updateContainerProperties();
+	//void updateContainerProperties(); //скрыт
 
 	void drawUserInterface() const;
 };
@@ -249,6 +238,7 @@ private:
 public:
 	//UIItemsContainer(UIItemsContainer*, Orientation, VerticalAlign, HorizontalAlign) noexcept;
 	UIItemsContainer(Orientation, VerticalAlign, HorizontalAlign) noexcept;
+	//UIItemsContainer(UIItemsContainer &UIItemsContainer);
 	~UIItemsContainer();
 
 	//void getUIItemSizes(int*, int*, int*) const; //наследуется
@@ -269,7 +259,8 @@ public:
 //---------------------------------------------------------------------------------------------
 //fuctions declaration
 
-UIItemsContainer* createMainMenu();
+void createMainMenu();
+//UIItemsContainer* createMainMenu();
 
 //---------------------------------------------------------------------------------------------
 //callbacks declaration

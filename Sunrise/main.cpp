@@ -31,8 +31,11 @@ using namespace std;
 
 #define MM_IN_ONE_INCH        25.4
 
-#define DEFAULT_SCREEN_WIDTH        640
-#define DEFAULT_SCREEN_HEIGHT       480
+//#define DEFAULT_SCREEN_WIDTH        640
+//#define DEFAULT_SCREEN_HEIGHT       480
+
+#define DEFAULT_SCREEN_WIDTH        800
+#define DEFAULT_SCREEN_HEIGHT       600
 #define DEFAULT_WINDOW_TITLE		"Sunrise"
 #define ICON_FILENAME				"resources/textures/sunrise.png"
 #define MAX_FPS 120
@@ -119,7 +122,7 @@ int main(void) {
 	//”станавливаем разрешение монитора
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-	ControlField::Instance().setDisplaySize(mode->width, mode->height);
+	UserInterface::Instance().setDisplaySize(mode->width, mode->height);
 
 	//”станавливаем минимальный размер окна
 	glfwSetWindowSizeLimits(window, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, mode->width, mode->height);
@@ -132,7 +135,7 @@ int main(void) {
 	freeTypeInit(mode->width * MM_IN_ONE_INCH / displayWidth_mm);
 	
 	//”станавливаем размер окна на начало работы приложени€
-	ControlField::Instance().setWindowSize(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
+	UserInterface::Instance().setWindowSize(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
 
 	//измерение FPS ч.0
 	int fpsControl_startFrame;

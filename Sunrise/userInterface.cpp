@@ -79,70 +79,6 @@ const map<const LabelType, const LabelProperties> labelsData = {
 };
 
 //---------------------------------------------------------------------------------------------
-//class ControlField definition
-
-ControlField::ControlField() = default;
-ControlField::~ControlField() = default;
-
-ControlField& ControlField::Instance() {
-	static ControlField singleton;
-	return singleton;
-}
-
-void ControlField::setDisplaySize(int displayWidth, int displayHeight) {
-	if (_controlField == nullptr) {
-		_controlField = new ActiveUIItem**[displayWidth];
-		for (int x = 0; x < displayWidth; x++) {
-			_controlField[x] = new ActiveUIItem*[displayHeight];
-		}
-		_displayWidth = displayWidth;
-		_displayHeight = displayHeight;
-	}
-}
-
-void ControlField::setWindowSize(int windowWidth, int windowHeight) {
-	_windowWidth = windowWidth;
-	_windowHeight = windowHeight;
-
-	//UserInterface:: //TODO
-}
-
-void ControlField::getWindowSize(int* width, int* height) const {
-	*width = _windowWidth;
-	*height = _windowHeight;
-}
-
-void ControlField::setActiveUIItemControlField(int xPos, int width, int yPos, int height, ActiveUIItem* activeUIItem) {
-	//костыль изза отсутсвия появления скрола при размерах контейнера больше размеров окна
-	//работает замечательно. пиксель в пиксель
-	for (int x = xPos; (x < xPos + width) && (x < _windowWidth); x++) {
-		for (int y = yPos; (y < yPos + height) && (y < _windowHeight); y++) {
-			_controlField[x][y] = activeUIItem;
-		}
-	}
-	/*for (int x = 0; x < xPos + width; x++) {
-		for (int y = 0; y < yPos + height; y++) {
-			_controlField[x][y] = activeUIItem;
-		}
-	}*/
-}
-
-void ControlField::triggerActiveUIItemOnClickCallbackAtPoint(int xPos, int yPos) {
-	ActiveUIItem* activeUIItem = _controlField[xPos][yPos];
-	if (activeUIItem != nullptr) {
-		activeUIItem->onClick();
-	}
-}
-
-void ControlField::clearControlField() {
-	for (int x = 0; x < _windowWidth; x++) {
-		for (int y = 0; y < _windowHeight; y++) {
-			_controlField[x][y] = nullptr;
-		}
-	}
-}
-
-//---------------------------------------------------------------------------------------------
 //class Drawer definition
 
 void UIItemDrawer::drawUIItem(UIItem* UIItem) {
@@ -169,29 +105,119 @@ UserInterface& UserInterface::Instance() {
 	return singleton;
 }
 
-void UserInterface::setUIItemsContainer(UIItemsContainer* UIItemsContainer) {
-	delete _UIItemContainer;
+void UserInterface::setDisplaySize(int displayWidth, int displayHeight) {
+	if (_controlField == nullptr) {
+		_controlField = new ActiveUIItem**[displayWidth];
+		for (int x = 0; x < displayWidth; x++) {
+			_controlField[x] = new ActiveUIItem*[displayHeight];
+		}
+		_displayWidth = displayWidth;
+		_displayHeight = displayHeight;
+	}
+}
 
-	_UIItemContainer = UIItemsContainer;
+void UserInterface::setWindowSize(int windowWidth, int windowHeight) {
+	_windowWidth = windowWidth;
+	_windowHeight = windowHeight;
+
+	updateContainerProperties();
+}
+
+void UserInterface::getWindowSize(int* width, int* height) const {
+	*width = _windowWidth;
+	*height = _windowHeight;
+}
+
+void UserInterface::setActiveUIItemControlField(int xPos, int width, int yPos, int height, ActiveUIItem* activeUIItem) {
+	//костыль изза отсутсвия появления скрола при размерах контейнера больше размеров окна
+	//работает замечательно. пиксель в пиксель
+	for (int x = xPos; (x < xPos + width) && (x < _windowWidth); x++) {
+		for (int y = yPos; (y < yPos + height) && (y < _windowHeight); y++) {
+			_controlField[x][y] = activeUIItem;
+		}
+	}
+	/*for (int x = 0; x < xPos + width; x++) {
+		for (int y = 0; y < yPos + height; y++) {
+			_controlField[x][y] = activeUIItem;
+		}
+	}*/
+}
+
+void UserInterface::triggerActiveUIItemOnClickCallbackAtPoint(int xPos, int yPos) {
+	ActiveUIItem* activeUIItem = _controlField[xPos][yPos];
+	if (activeUIItem != nullptr) {
+		activeUIItem->onClick();
+	}
+}
+
+void UserInterface::clearControlField() {
+	for (int x = 0; x < _windowWidth; x++) {
+		for (int y = 0; y < _windowHeight; y++) {
+			_controlField[x][y] = nullptr;
+		}
+	}
+}
+
+/*
+После передачи контейнера в эту функцию контейнер трогать нельзя от слова совсем. костыль такой
+*/
+void UserInterface::setUIItemsContainer(UIItemsContainer* UIItemsContainer) {
+	delete _UIItemsContainer;
+
+	_UIItemsContainer = UIItemsContainer; //возможно нужно копировать объект, а не ссылку
+	//_UIItemContainer = new UIItemsContainer(*uIItemsContainer); //TODO
 
 	updateContainerProperties();
 }
 
 void UserInterface::updateContainerProperties() { //существует, потому что рассчитывать параметры контейнеров надо не только при добавлении элементов в контейнер, но и при изменении размеров окна //как минимум это задел на появление скрола при малых и недостаточных размерах окна
-	if (_UIItemContainer != nullptr) {
+	if (_UIItemsContainer != nullptr) {
 		//снизу доверха рассчитываем размеры контейнеров, а потом сверху вниз позиции
-		UIItemDrawer::updateContainerProperties(_UIItemContainer);
+		UIItemDrawer::updateContainerProperties(_UIItemsContainer);
 
-		int _widthUIItem, _heightUIItem;
-		_UIItemContainer->getUIItemSizes(&_widthUIItem, &_heightUIItem, nullptr);
+		/*int _widthUIItem, _heightUIItem;
+		_UIItemContainer->getUIItemSizes(&_widthUIItem, &_heightUIItem, nullptr);*/
 
-		UIItemDrawer::setPosition(_UIItemContainer, 0, 0);
+		//UserInterface единственный контейнер, которого волнуют внешние отступы одиночных вложенных элементов интерфейса. святой костыль
+		int _widthUIItem, _heightUIItem, _marginSizeUIItem;
+		_UIItemsContainer->getUIItemSizes(&_widthUIItem, &_heightUIItem, &_marginSizeUIItem);
+
+		int _xPosUIItem = 0, _yPosUIItem = 0;
+
+		switch (_horizontalAlign) {
+		case(HorizontalAlign::LEFT):
+			_xPosUIItem = 0;
+			break;
+		case(HorizontalAlign::MIDDLE):
+			_xPosUIItem = (_windowWidth - _widthUIItem) / 2; //изза int`а копится небольшая ошибка. максимум 1 пиксель на контейнер, впрочем это не влияет на controlField изза полукостыля в нём
+			break;
+		case(HorizontalAlign::RIGHT):
+			_xPosUIItem = _windowWidth - _widthUIItem;
+			break;
+		}
+		if (_marginSizeUIItem > _xPosUIItem) _xPosUIItem = _marginSizeUIItem;
+
+		switch (_verticalAlign) {
+		case(VerticalAlign::TOP) :
+			_yPosUIItem = 0;
+			break;
+		case(VerticalAlign::MIDDLE):
+			_yPosUIItem = (_windowHeight - _heightUIItem) / 2;
+			break;
+		case(VerticalAlign::BOTTOM):
+			_yPosUIItem = _windowHeight - _heightUIItem;
+			break;
+		}
+		if (_marginSizeUIItem > _yPosUIItem) _yPosUIItem = _marginSizeUIItem;
+		
+
+		UIItemDrawer::setPosition(_UIItemsContainer, _xPosUIItem, _yPosUIItem);
 	}
 }
 
 void UserInterface::drawUserInterface() const {
-	if (_UIItemContainer != nullptr) {
-		UIItemDrawer::drawUIItem(_UIItemContainer);
+	if (_UIItemsContainer != nullptr) {
+		UIItemDrawer::drawUIItem(_UIItemsContainer);
 	}
 }
 
@@ -242,12 +268,97 @@ UIItemsContainer::~UIItemsContainer() {
 	if (marginSize != nullptr) *marginSize = _marginSize;
 }*/
 
+//установка размеров контейнеров снизу вверх
+//установка позиций сверху вниз
+void UIItemsContainer::updateContainerProperties() { //!WARNING! сверху вниз, иначе бесконечная петля!!!
+	int _newWidth = 0, _newHeight = 0;
+	int _marginSizePrevUIItem = 0, _marginSizeBetWeenUIItems = 0;
+
+	for (int i = 0; i < _UIItems.size(); i++) {
+		if (UIItemsContainer* _UIItemsContainer = dynamic_cast<UIItemsContainer*>(_UIItems[i])) {
+			_UIItemsContainer->updateContainerProperties();
+		}
+
+		//к этому моменту у _UIItems точно есть размеры
+		int _widthUIItem, _heightUIItem, _marginSizeUIItem;
+		_UIItems[i]->getUIItemSizes(&_widthUIItem, &_heightUIItem, &_marginSizeUIItem);
+
+		if (i != 0) _marginSizeUIItem > _marginSizePrevUIItem ? _marginSizeBetWeenUIItems = _marginSizeUIItem : _marginSizeBetWeenUIItems = _marginSizePrevUIItem;
+		if (_orientation == Orientation::VERTICAL) {			
+			_newHeight += _marginSizeBetWeenUIItems + _heightUIItem;
+			
+			if (_widthUIItem > _newWidth) _newWidth = _widthUIItem;
+		} else {
+			_newWidth += _marginSizeBetWeenUIItems + _widthUIItem;
+
+			if (_heightUIItem > _newHeight) _newHeight = _heightUIItem;
+		}
+
+		_marginSizePrevUIItem = _marginSizeUIItem;
+	}
+
+	_newWidth += 2 * _paddingSize;
+	_newHeight += 2 * _paddingSize;
+
+	_width = _newWidth;
+	_height = _newHeight;
+}
+
 void UIItemsContainer::setPosition(int xPos, int yPos) {
 	_xPos = xPos;
 	_yPos = yPos;
 
+	int _xPosPrevUIItem = _xPos, _yPosPrevUIItem = _yPos; //на самом деле можно было обойтись 1 переменной, но так нагляднее и безопаснее
+	int _widthPrevUIItem = 0, _heightPrevUIItem = 0; //таже история, что и строчкой выше
+	int _marginSizePrevUIItem = 0, _marginSizeBetWeenUIItems = 0;
+
 	for (int i = 0; i < _UIItems.size(); i++) {
-		UIItemDrawer::setPosition(_UIItems[i], 20, i * 80);
+		int _widthUIItem, _heightUIItem, _marginSizeUIItem;
+		_UIItems[i]->getUIItemSizes(&_widthUIItem, &_heightUIItem, &_marginSizeUIItem);
+
+		int _xPosUIItem = _xPos + _paddingSize, _yPosUIItem = _yPos + _paddingSize; //инициализирую по фану //на самом деле чтоб в случае ЧЕГОТО в _xPos не было каких нибудь -85******, хотя такой баг быстро обнаруживал бы себя. хм
+
+		if (i != 0) _marginSizeUIItem > _marginSizePrevUIItem ? _marginSizeBetWeenUIItems = _marginSizeUIItem : _marginSizeBetWeenUIItems = _marginSizePrevUIItem;
+		if (_orientation == Orientation::VERTICAL) {
+			switch (_horizontalAlign) {
+			case(HorizontalAlign::LEFT):
+				_xPosUIItem = _xPos + _paddingSize;
+				break;
+			case(HorizontalAlign::MIDDLE):
+				_xPosUIItem = _xPos + _paddingSize + (_width - _widthUIItem) / 2;
+				break;
+			case(HorizontalAlign::RIGHT):
+				_xPosUIItem = _xPos + _paddingSize + _width - _widthUIItem;
+				break;
+			}
+
+			_yPosUIItem = _yPosPrevUIItem + _heightPrevUIItem + _marginSizeBetWeenUIItems;
+			//if (_marginSizeUIItem > _xPosUIItem) _xPosUIItem = _marginSizeUIItem; //не обсчитываются во второй оси
+		}
+		else {
+			switch (_verticalAlign) {
+			case(VerticalAlign::TOP):
+				_yPosUIItem = _yPos;
+				break;
+			case(VerticalAlign::MIDDLE):
+				_yPosUIItem = _yPos + (_height - _heightUIItem) / 2;
+				break;
+			case(VerticalAlign::BOTTOM):
+				_yPosUIItem = _yPos + _height - _heightUIItem;
+				break;
+			}
+
+			_xPosUIItem = _xPosPrevUIItem + _widthPrevUIItem + _marginSizeBetWeenUIItems;
+			//if (_marginSizeUIItem > _yPosUIItem) _yPosUIItem = _marginSizeUIItem; //не обсчитываются во второй оси
+		}
+
+		UIItemDrawer::setPosition(_UIItems[i], _xPosUIItem, _yPosUIItem);
+
+		_xPosPrevUIItem = _xPosUIItem;
+		_yPosPrevUIItem = _yPosUIItem;
+		_widthPrevUIItem = _widthUIItem;
+		_heightPrevUIItem = _heightUIItem;
+		_marginSizePrevUIItem = _marginSizeUIItem;
 	}
 }
 
@@ -257,34 +368,6 @@ void UIItemsContainer::addUIItem(UIItem* UIItem) {
 	/*if (UIItemsContainer* _UIItemsContainer = dynamic_cast<UIItemsContainer*>(UIItem)) {
 		_UIItemsContainer->updateContainerProperties(); //TODO
 	}*/
-}
-
-//установка размеров контейнеров снизу вверх
-//установка позиций сверху вниз
-void UIItemsContainer::updateContainerProperties() { //!WARNING! сверху вниз, иначе бесконечная петля!!!
-	int _marginSizePrevUIItem = 0;
-	for (int i = 0; i < _UIItems.size(); i++) {
-		if (UIItemsContainer* _UIItemsContainer = dynamic_cast<UIItemsContainer*>(_UIItems[i])) {
-			_UIItemsContainer->updateContainerProperties();
-		}
-		//к этому моменту у _UIItems точно есть размеры
-
-		int _widthUIItem, _heightUIItem, _marginSizeUIItem;
-		_UIItems[i]->getUIItemSizes(&_widthUIItem, &_heightUIItem, &_marginSizeUIItem);
-
-		if (_orientation == Orientation::VERTICAL) {
-			_height += _heightUIItem + _marginSizePrevUIItem;
-			
-			if (_widthUIItem > _width) _width = _widthUIItem;
-		} else {
-
-		}
-
-		_marginSizePrevUIItem = _marginSizeUIItem;
-	}
-
-	_width += 2 * _paddingSize;
-	_height += 2 * _paddingSize;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -373,7 +456,7 @@ private:
 	//int** _charsLocation;
 
 	void drawUIItem() const {
-		ControlField::Instance().setActiveUIItemControlField(_xPos, _width, _yPos, _height, (ActiveUIItem*)this);
+		UserInterface::Instance().setActiveUIItemControlField(_xPos, _width, _yPos, _height, (ActiveUIItem*)this);
 
 		glColor4fv(BUTTON_COLOR_RGB);
 		glBegin(GL_QUADS);
@@ -459,15 +542,16 @@ public:
 //---------------------------------------------------------------------------------------------
 //functions
 
-UIItemsContainer* createMainMenu() {
-	UIItemsContainer* _menuItemsContainer = new UIItemsContainer(
+void createMainMenu() {
+//UIItemsContainer* createMainMenu() {
+	UIItemsContainer* _mainMenuItemsContainer = new UIItemsContainer(
 		//nullptr,
 		Orientation::VERTICAL,
 		VerticalAlign::MIDDLE,
 		HorizontalAlign::MIDDLE
 	);
 
-	_menuItemsContainer->addUIItem(new Label(LabelType::TITLE, 0, 40));
+	_mainMenuItemsContainer->addUIItem(new Label(LabelType::TITLE, 0, 40));
 
 	UIItemsContainer* _menuButtonsContainer = new UIItemsContainer(
 		//_menuItemsContainer,
@@ -481,9 +565,14 @@ UIItemsContainer* createMainMenu() {
 	_menuButtonsContainer->addUIItem(new Button(ButtonType::OPTIONS, 10, 10));
 	_menuButtonsContainer->addUIItem(new Button(ButtonType::EXIT, 10, 10));
 
-	_menuItemsContainer->addUIItem(_menuButtonsContainer);
+	_mainMenuItemsContainer->addUIItem(_menuButtonsContainer);
 
-	return _menuItemsContainer;
+	UserInterface::Instance().setUIItemsContainer(_mainMenuItemsContainer);
+
+	//чтобы не париться по поводу дальнейшнего изменения _mainMenuItemsContainer можно создать класс-переборку, берущего создание контейнера, работу с классом UserInterface и удаление контейнера на себя, но это время
+
+	//delete _mainMenuItemsContainer;
+	//return _menuItemsContainer;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -531,7 +620,7 @@ void callback_windowSize(GLFWwindow* window, int width, int height) {
 		glfwSetWindowSize(window, width, height);
 	}
 
-	ControlField::Instance().setWindowSize(width, height);
+	UserInterface::Instance().setWindowSize(width, height);
 
 	//MenuItemContainer.setWindowSize(width, height);
 }
@@ -546,8 +635,8 @@ void callback_mouseButton(GLFWwindow *window, const int button, const int action
 		double cursor_x, cursor_y;
 		glfwGetCursorPos(window, &cursor_x, &cursor_y);
 
-		ControlField::Instance().triggerActiveUIItemOnClickCallbackAtPoint(cursor_x, cursor_y);
-		cout << "cursor_x: " << cursor_x << "  cursor_y: " << cursor_y << endl;
+		UserInterface::Instance().triggerActiveUIItemOnClickCallbackAtPoint(cursor_x, cursor_y);
+		//cout << "cursor_x: " << cursor_x << "  cursor_y: " << cursor_y << endl;
 	}
 }
 
