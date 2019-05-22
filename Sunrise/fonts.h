@@ -24,8 +24,8 @@ using std::endl;
 //---------------------------------------------------------------------------------------------
 //global variables and types
 
-const float TITLE_FONT_COLOR_RGB[3] = { 255.f / 255, 255.f / 255, 255.f / 255 };
-const float BUTTON_FONT_COLOR_RGB[3] = { 255.f / 255, 255.f / 255, 255.f / 255 }; //buttonFontColorRGB
+const float TITLE_FONT_COLOR_RGB[4] = { 255.f/255, 255.f/255, 255.f/255, 255.f/255};
+const float BUTTON_FONT_COLOR_RGB[4] = { 255.f/255, 255.f/255, 255.f/255, 255.f/255}; //buttonFontColorRGB
 
 enum class FontName {
 	TITLE,

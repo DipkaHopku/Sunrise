@@ -6,8 +6,7 @@
 //local variables, local types and local function declarations
 
 //bool** _controlField = nullptr;
-
-static int ID = -1;
+//static int ID = -1;
 
 class ButtonProperties {
 private:
@@ -47,9 +46,9 @@ void callback_exitButton_onClick();
 
 const map<const ButtonType, const ButtonProperties> buttonsData = {
 	{ButtonType::START, ButtonProperties(	"Start",	FontName::BUTTON,	callback_startButton_onClick)},
-	{ButtonType::LOAD, ButtonProperties(	"Load",		FontName::BUTTON,	callback_startButton_onClick)},
-	{ButtonType::OPTIONS, ButtonProperties(	"Options",	FontName::BUTTON,	callback_startButton_onClick)},
-	{ButtonType::EXIT, ButtonProperties(	"Exit",		FontName::BUTTON,	callback_startButton_onClick)}
+	{ButtonType::LOAD, ButtonProperties(	"Load",		FontName::BUTTON,	callback_loadButton_onClick)},
+	{ButtonType::OPTIONS, ButtonProperties(	"Options",	FontName::BUTTON,	callback_optionsButton_onClick)},
+	{ButtonType::EXIT, ButtonProperties(	"Exit",		FontName::BUTTON,	callback_exitButton_onClick)}
 };
 
 class LabelProperties {
@@ -104,20 +103,8 @@ void ControlField::setDisplaySize(int displayWidth, int displayHeight) {
 void ControlField::setWindowSize(int windowWidth, int windowHeight) {
 	_windowWidth = windowWidth;
 	_windowHeight = windowHeight;
-	/*if (_controlField != nullptr) { //TODO небольшая утечка памяти до 8мб. возможно она даже не моя. зависит от величины экрана. если открывать сразу большой экран, то утечки нет.
-		for (int x = 0; x < _windowWidth; x++) {
-			delete[] _controlField[x];
-		}
-		delete[] _controlField;
-		_controlField = nullptr;
-	}
 
-	_controlField = new bool*[width];
-	for (int x = 0; x < width; x++) {
-		_controlField[x] = new bool[height];
-	}
-	_windowWidth = width;
-	_windowHeight = height;*/
+	//UserInterface:: //TODO
 }
 
 void ControlField::getWindowSize(int* width, int* height) const {
@@ -126,11 +113,18 @@ void ControlField::getWindowSize(int* width, int* height) const {
 }
 
 void ControlField::setActiveUIItemControlField(int xPos, int width, int yPos, int height, ActiveUIItem* activeUIItem) {
-	for (int x = 0; x <= xPos + width; x++) {
-		for (int y = 0; y <= yPos + height; y++) {
+	//костыль изза отсутсвия появления скрола при размерах контейнера больше размеров окна
+	//работает замечательно. пиксель в пиксель
+	for (int x = xPos; (x < xPos + width) && (x < _windowWidth); x++) {
+		for (int y = yPos; (y < yPos + height) && (y < _windowHeight); y++) {
 			_controlField[x][y] = activeUIItem;
 		}
 	}
+	/*for (int x = 0; x < xPos + width; x++) {
+		for (int y = 0; y < yPos + height; y++) {
+			_controlField[x][y] = activeUIItem;
+		}
+	}*/
 }
 
 void ControlField::triggerActiveUIItemOnClickCallbackAtPoint(int xPos, int yPos) {
@@ -149,6 +143,22 @@ void ControlField::clearControlField() {
 }
 
 //---------------------------------------------------------------------------------------------
+//class Drawer definition
+
+void UIItemDrawer::drawUIItem(UIItem* UIItem) {
+	UIItem->drawUIItem();
+}
+
+void UIItemDrawer::setPosition(UIItem* UIItem, int xPos, int yPos) {
+	UIItem->setPosition(xPos, yPos);
+}
+
+//нужно для UserInterface
+void UIItemDrawer::updateContainerProperties(UIItemsContainer* UIItemsContainer) {
+	UIItemsContainer->updateContainerProperties();
+}
+
+//---------------------------------------------------------------------------------------------
 //class UserInterface definition
 
 UserInterface::UserInterface() = default;
@@ -159,11 +169,57 @@ UserInterface& UserInterface::Instance() {
 	return singleton;
 }
 
+void UserInterface::setUIItemsContainer(UIItemsContainer* UIItemsContainer) {
+	delete _UIItemContainer;
+
+	_UIItemContainer = UIItemsContainer;
+
+	updateContainerProperties();
+}
+
+void UserInterface::updateContainerProperties() { //существует, потому что рассчитывать параметры контейнеров надо не только при добавлении элементов в контейнер, но и при изменении размеров окна //как минимум это задел на появление скрола при малых и недостаточных размерах окна
+	if (_UIItemContainer != nullptr) {
+		//снизу доверха рассчитываем размеры контейнеров, а потом сверху вниз позиции
+		UIItemDrawer::updateContainerProperties(_UIItemContainer);
+
+		int _widthUIItem, _heightUIItem;
+		_UIItemContainer->getUIItemSizes(&_widthUIItem, &_heightUIItem, nullptr);
+
+		UIItemDrawer::setPosition(_UIItemContainer, 0, 0);
+	}
+}
+
+void UserInterface::drawUserInterface() const {
+	if (_UIItemContainer != nullptr) {
+		UIItemDrawer::drawUIItem(_UIItemContainer);
+	}
+}
+
 //---------------------------------------------------------------------------------------------
-//class MenuItemContainer definition
+//class UIItem definition
+
+void UIItem::getUIItemSizes(int* width, int* height, int* marginSize) const {
+	if (width != nullptr) *width = _width;
+	if (height != nullptr) *height = _height;
+	if (marginSize != nullptr) *marginSize = _marginSize;
+}
+
+void UIItem::setPosition(int xPos, int yPos) {
+	_xPos = xPos;
+	_yPos = yPos;
+}
+
+//---------------------------------------------------------------------------------------------
+//class UIItemsContainer definition
+
+void UIItemsContainer::drawUIItem() const { //const {
+	for (int i = 0; i < _UIItems.size(); i++) {
+		//Drawer d;
+		UIItemDrawer::drawUIItem(_UIItems[i]);
+	}
+}
 
 UIItemsContainer::UIItemsContainer(
-	//UIItemsContainer* parentContainer,
 	Orientation orientation, 
 	VerticalAlign verticalAlign, 
 	HorizontalAlign horizontalAlign
@@ -179,45 +235,56 @@ UIItemsContainer::~UIItemsContainer() {
 	}
 }
 
-void UIItemsContainer::getUIItemSizes(int* width, int* height, int* marginSize) const {
-	*width = _width;
-	*height = _height;
+/*void UIItemsContainer::getUIItemSizes(int* width, int* height, int* marginSize) const {
+	if (width != nullptr) *width = _width;
+	if (height != nullptr) *height = _height;
 	//*paddingSize = _paddingSize;
-	*marginSize = _marginSize;
-}
+	if (marginSize != nullptr) *marginSize = _marginSize;
+}*/
 
-void UIItemsContainer::drawUIItem() const { //const {
+void UIItemsContainer::setPosition(int xPos, int yPos) {
+	_xPos = xPos;
+	_yPos = yPos;
+
+	for (int i = 0; i < _UIItems.size(); i++) {
+		UIItemDrawer::setPosition(_UIItems[i], 20, i * 80);
+	}
 }
 
 void UIItemsContainer::addUIItem(UIItem* UIItem) {
-	/*if (UIItem->isUIItemsContainer()) {
-		UIItemsContainer* container = (UIItemsContainer*)UIItem;
-		container->setParentUIItemsContainer();
-	}*/
 	_UIItems.push_back(UIItem);
-	//updateContainerProperties();
+	//это делает UserInterface и только тогда когда есть необходимость
+	/*if (UIItemsContainer* _UIItemsContainer = dynamic_cast<UIItemsContainer*>(UIItem)) {
+		_UIItemsContainer->updateContainerProperties(); //TODO
+	}*/
 }
 
+//установка размеров контейнеров снизу вверх
+//установка позиций сверху вниз
 void UIItemsContainer::updateContainerProperties() { //!WARNING! сверху вниз, иначе бесконечная петля!!!
+	int _marginSizePrevUIItem = 0;
 	for (int i = 0; i < _UIItems.size(); i++) {
+		if (UIItemsContainer* _UIItemsContainer = dynamic_cast<UIItemsContainer*>(_UIItems[i])) {
+			_UIItemsContainer->updateContainerProperties();
+		}
+		//к этому моменту у _UIItems точно есть размеры
+
 		int _widthUIItem, _heightUIItem, _marginSizeUIItem;
 		_UIItems[i]->getUIItemSizes(&_widthUIItem, &_heightUIItem, &_marginSizeUIItem);
 
-		int _marginSizePrevUIItem = 0;
 		if (_orientation == Orientation::VERTICAL) {
-			_height += _heightUIItem;
-			TODO
+			_height += _heightUIItem + _marginSizePrevUIItem;
+			
+			if (_widthUIItem > _width) _width = _widthUIItem;
 		} else {
 
 		}
+
+		_marginSizePrevUIItem = _marginSizeUIItem;
 	}
 
 	_width += 2 * _paddingSize;
 	_height += 2 * _paddingSize;
-
-	/*if (_parentContainer != nullptr) {
-		_parentContainer->updateContainerProperties();
-	}*/
 }
 
 //---------------------------------------------------------------------------------------------
@@ -234,6 +301,15 @@ private:
 	string _title;
 	FontName _fontName;
 
+	void drawUIItem() const {
+		drawString(
+			_xPos + _paddingSize,
+			_yPos + _paddingSize,
+			_fontName,
+			_title,
+			BUTTON_FONT_COLOR_RGB);
+	}
+
 public:
 	/*
 	arguments:
@@ -241,6 +317,7 @@ public:
 	#2 - paddingSize in pixels
 	#3 - marginSize in pixels
 	*/
+	//устанавливается всё кроме позиции кнопки, её устанавливает контейнер
 	Label(const LabelType labelType, const int paddingSize, const int marginSize) { //noexcept {
 		auto _labelData = labelsData.find(labelType);
 		if (_labelData != labelsData.end()) {
@@ -260,22 +337,22 @@ public:
 	~Label() {
 	}
 
-	void getUIItemSizes(int* width, int* height, int* marginSize) const {
-		*width = _width;
-		*height = _height;
+	/*void getUIItemSizes(int* width, int* height, int* marginSize) const {
+		if (width != nullptr) *width = _width;
+		if (height != nullptr) *height = _height;
 		//*paddingSize = _paddingSize;
-		*marginSize = _marginSize;
-	}
+		if (marginSize != nullptr) *marginSize = _marginSize;
+	}*/
 
 	//void drawUIElement() const;
-	void drawUIItem() const {
+	/*void drawUIItem() const {
 		drawString(
 			_xPos + _paddingSize,
 			_yPos + _paddingSize,
 			_fontName,
 			_title,
 			BUTTON_FONT_COLOR_RGB);
-	}
+	}*/
 };
 
 //---------------------------------------------------------------------------------------------
@@ -294,6 +371,25 @@ private:
 
 	//int _textSize;
 	//int** _charsLocation;
+
+	void drawUIItem() const {
+		ControlField::Instance().setActiveUIItemControlField(_xPos, _width, _yPos, _height, (ActiveUIItem*)this);
+
+		glColor4fv(BUTTON_COLOR_RGB);
+		glBegin(GL_QUADS);
+		glVertex2i(_xPos, _yPos); //самый левый верхний пиксель квардрата будет _xPos, _yPos, а самый левый верхний пиксель окна в системе координат опенгл это (0,0)
+		glVertex2i(_xPos + _width, _yPos);
+		glVertex2i(_xPos + _width, _yPos + _height); //самый правый нижний пиксель квадрата будет _xPos + _width - 1, _yPos + _height - 1, а самый правый нижний пиксель окна в системе координат опенгл это (window width -1, window height -1)
+		glVertex2i(_xPos, _yPos + _height);
+		glEnd();
+
+		drawString(
+			_xPos + _paddingSize,
+			_yPos + _paddingSize,
+			_fontName,
+			_title,
+			BUTTON_FONT_COLOR_RGB);
+	}
 
 public:
 	//устанавливается всё кроме позиции кнопки, её устанавливает контейнер
@@ -321,19 +417,19 @@ public:
 		delete[] _charsLocation;*/
 	}
 
-	void getUIItemSizes(int* width, int* height, int* marginSize) const {
-		*width = _width;
-		*height = _height;
+	/*void getUIItemSizes(int* width, int* height, int* marginSize) const {
+		if (width != nullptr) *width = _width;
+		if (height != nullptr) *height = _height;
 		//*paddingSize = _paddingSize;
-		*marginSize = _marginSize;
-	}
+		if (marginSize != nullptr) *marginSize = _marginSize;
+	}*/
 
-	void setPosition(int xPos, int yPos) {
+	/*void setPosition(int xPos, int yPos) {
 		_xPos = xPos;
 		_yPos = yPos;
-	}
+	}*/
 
-	void drawUIItem() const {
+	/*void drawUIItem() const {
 		ControlField::Instance().setActiveUIItemControlField(_xPos, _width, _yPos, _height, (ActiveUIItem*)this);
 
 		glColor4fv(BUTTON_COLOR_RGB);
@@ -350,154 +446,14 @@ public:
 			_fontName,
 			_title,
 			BUTTON_FONT_COLOR_RGB);
-
-
-		/*int width, height;
-		const unsigned char* bitmapBuffer;
-		getCharBitmapBuffer(FontName::TITLE, 'S', &bitmapBuffer, &width, &height);
-
-		if (ID == -1) {
-			//ID = SOIL_create_OGL_texture(bitmapBuffer, width, height, 1, SOIL_CREATE_NEW_ID,  SOIL_FLAG_MIPMAPS); //канал распознаётся как яркость(нет прозрачность. фон - чёрный квадрат, но цвет задаётся glColor //появляется сглаживание
-			//ID = SOIL_create_OGL_texture(bitmapBuffer, width, height, 1, SOIL_CREATE_NEW_ID, SOIL_FLAG_DDS_LOAD_DIRECT ); //перекошенный текст. чёрный фон //цвет текста glColor
-			ID = SOIL_create_OGL_texture(bitmapBuffer, width, height, 1, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO); //сглаживание меньше чем при мипмапах, чёрный фон
-		}
-		glColor3f(0.8,1,0.5);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, ID); //чем меньше колво айди - тем лучше
-
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);//повторение текстуры
-
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);//сглаживания при уменьшении
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);//сглаживания при увеличении
-
-		glBegin(GL_QUADS); //устаревший интерфейс, НО время выполнения функции всё ещё менее 1 миллисекунды
-		glTexCoord2i(0, 0); glVertex2i(_xPos, _yPos); //i - это int
-		glTexCoord2i(1, 0); glVertex2i(_xPos + width, _yPos);
-		glTexCoord2i(1, 1); glVertex2i(_xPos + width, _yPos + height);
-		glTexCoord2i(0, 1); glVertex2i(_xPos, _yPos + height);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);*/
-
-
-		/*glBegin(GL_POINTS);
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				const int a = bitmapBuffer[y * width + x];
-				float aa = (float)a / 255;
-				glColor4f(0.8, 1.f, 0.8, aa);
-				glVertex2i(_xPos+x, _yPos+y);
-			}
-		}
-		glEnd();*/
-
-		/*glColor3f(1.f, 1.f, 1.f);
-		glPixelTransferi(GL_ALPHA_SCALE, 1);*/
-
-		/*glPixelTransferi(GL_MAP_COLOR, 1);//использоваь карту
-		float map[2] = { 1, 0 };//пусть...
-		  //...все единицы закрашивают в чёрный, а все нули - в белый цвета...
-		glPixelMapfv(GL_PIXEL_MAP_I_TO_R, 2, map);
-		glPixelMapfv(GL_PIXEL_MAP_I_TO_G, 2, map);
-		glPixelMapfv(GL_PIXEL_MAP_I_TO_B, 2, map);
-		//...и все нули будут прозрачными
-		map[0] = 0, map[1] = 1;
-		glPixelMapfv(GL_PIXEL_MAP_I_TO_A, 2, map);
-
-		glRasterPos2i(_xPos + 20, _yPos + 20);
-		glPixelZoom(1.0, -1.0);
-		glDrawPixels(width, height, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, bitmapBuffer);
-
-		glPixelTransferi(GL_MAP_COLOR, 0);//не использовать карту*/
-
-		//glPixelTransferi(GL_MAP_COLOR, 1);
-		/*unsigned char arr[24] = {
-			0, 255, 255, 0, 255, 127,
-			0, 255, 0, 255, 255, 127,
-			0, 0, 255, 255, 0, 0,
-			127, 0, 127, 0, 255, 127
-		};*/
-
-		//glColor3f(255, 0, 255);
-
-		/*unsigned char arr[96] = {
-			255, 255, 255, 0,		255, 255, 255, 255,		255, 255, 255, 127,		255, 255, 255, 0,		255, 255, 255, 255,		255, 255, 255, 127,
-			255, 255, 255, 255,		255, 255, 255, 255,		255, 255, 255, 127,		255, 255, 255, 255,		255, 255, 255, 255,		255, 255, 255, 127,
-			255, 255, 255, 127,		255, 255, 255, 0,		255, 255, 255, 0,		255, 255, 255, 127,		255, 255, 255, 0,		255, 255, 255, 0,
-			255, 255, 255, 127,		255, 255, 255, 0,		255, 255, 255, 0,		255, 255, 255, 127,		255, 255, 255, 0,		255, 255, 255, 0
-		};*/
-
-		/*glRasterPos2i(_xPos + 20, _yPos + 20);
-		glPixelZoom(16.0, -16.0);
-		glDrawPixels(6, 4, GL_ALPHA, GL_UNSIGNED_BYTE, arr);*/
-		//glPixelTransferi(GL_MAP_COLOR, 0);
-
-		/*xx = yy = 40;
-		int ID = SOIL_create_OGL_texture(arr, 6, 4, 4, SOIL_CREATE_NEW_ID, SOIL_FLAG_DDS_LOAD_DIRECT);
-		glEnable(GL_TEXTURE_2D);
-		//auto start = clock();
-		glBindTexture(GL_TEXTURE_2D, ID); //чем меньше колво айди - тем лучше
-
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);//повторение текстуры
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);//сглаживания при уменьшении
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);//сглаживания при увеличении
-
-		glBegin(GL_QUADS); //устаревший интерфейс, НО время выполнения функции всё ещё менее 1 миллисекунды
-		glTexCoord2i(0, 0); glVertex2i(_xPos, _yPos); //i - это int
-		glTexCoord2i(1, 0); glVertex2i(_xPos + 60, _yPos);
-		glTexCoord2i(1, 1); glVertex2i(_xPos + 60, _yPos + 40);
-		glTexCoord2i(0, 1); glVertex2i(_xPos, _yPos + 40);
-		glEnd();
-		glDisable(GL_TEXTURE_2D);*/
-
-		/*// Вывод символа в консоли
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				// Получение прозрачности точки (x, y)
-				//const int a = glyph->bitmap.buffer[y * pitch + x];
-				const int a = bitmapBuffer[y * width + x];
-
-				if (a > 127) {
-					cout << "*";
-				//} else if (a > 63) {
-					//cout << ".";
-				} else {
-					//cout << " ";
-					cout << ".";
-				}
-			}
-			cout << endl;
-		}*/
-
-
-		/*static int quantity = 0, sum = 0;
-		if (quantity > 100) { quantity = sum = 0; }
-		int start = std::clock();
-		//cout << "start - " << std::clock();
-		int w, h;
-		ControlField::Instance().getWindowSize(&w, &h);
-		for (int i = 0; i < 100000; i++) {
-		//glBegin(GL_QUADS);
-		//glColor3fv(buttonColorRGB);
-			glVertex2i(_xPos, _yPos);
-			glVertex2i(_xPos + _width, _yPos);
-			glVertex2i(_xPos + _width, _yPos + _height);
-			glVertex2i(_xPos, _yPos + _height);
-			//glEnd();
-		}
-		quantity++;
-		sum += std::clock() - start;
-		cout << "average time(q=" << quantity << "):\t" << (float) sum/ quantity << endl;
-		glEnd();*/
-	}
+	}*/
 
 	void onClick() const {
 		_onClickCallback();
 	}
+
+	//debug
+	//string __getTitle() {return _title;}
 };
 
 //---------------------------------------------------------------------------------------------
@@ -534,19 +490,19 @@ UIItemsContainer* createMainMenu() {
 //buttons callbacks
 
 void callback_startButton_onClick() {
-
+	cout << "start button is pressed" << endl;
 }
 
 void callback_loadButton_onClick() {
-
+	cout << "load button is pressed" << endl;
 }
 
 void callback_optionsButton_onClick() {
-
+	cout << "options button is pressed" << endl;
 }
 
 void callback_exitButton_onClick() {
-
+	cout << "exit button is pressed" << endl;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -590,7 +546,46 @@ void callback_mouseButton(GLFWwindow *window, const int button, const int action
 		double cursor_x, cursor_y;
 		glfwGetCursorPos(window, &cursor_x, &cursor_y);
 
-		//cout << "cursor_x: " << cursor_x << "  cursor_y: " << cursor_y << endl;
+		ControlField::Instance().triggerActiveUIItemOnClickCallbackAtPoint(cursor_x, cursor_y);
+		cout << "cursor_x: " << cursor_x << "  cursor_y: " << cursor_y << endl;
 	}
 }
 
+
+
+/*//debug
+void ControlField::__drawControlField() {
+	glColor4f(1, 0, 0, 1);
+	int left, top, right, bot;
+	left = 0;
+	right = 1;
+	top = 0;
+	bot = 1;
+	glBegin(GL_QUADS);
+	glVertex2i(left, top);
+	glVertex2i(right, top);
+	glVertex2i(right, bot); //на самом деле right - 1, bot - 1
+	glVertex2i(left, bot);
+
+
+	//cerr << "WARNING: debug function __drawControlField is enabled" << endl;
+	glDisable(GL_POINT_SMOOTH);
+	glBegin(GL_POINTS);
+	for (int x = 0; x < _windowWidth; x++) {
+		for (int y = 0; y < _windowHeight; y++) {
+			if (_controlField[x][y] != nullptr) {
+				//if (((Button*)_controlField[x][y])->__getTitle() == "Start") {}
+				string str = ((Button*)_controlField[x][y])->__getTitle();
+				if (str == "Start") glColor4f(1, 0, 0, 0.25);
+				else if (str == "Load") glColor4f(0, 1, 0, 0.25);
+				else if (str == "Options") glColor4f(0, 0, 1, 0.25);
+				else glColor4f(0, 1, 1, 0.25);
+				//glColor4f(1, 0, 0, 0.25);
+				glVertex2i(x, y);
+			}
+		}
+		//glColor4f(1, 0, 0, 1);
+		//glVertex2i(x, 1);
+	}
+	glEnd();
+}*/

@@ -13,6 +13,11 @@ void gameplayProcessing() {
 	ControlField::Instance().getWindowSize(&_windowWidth, &_windowHeight);
 
 	switch (applicationState) {
+	case ApplicationState::APPLICATION_LAUNCH:
+		UserInterface::Instance().setUIItemsContainer(createMainMenu());
+
+		applicationState = ApplicationState::MAIN_MENU;
+
 	case ApplicationState::MAIN_MENU :
 		drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
 		break;
@@ -39,6 +44,11 @@ void gameplayProcessing() {
 		//TODO
 		break;
 	}
+
+	UserInterface::Instance().drawUserInterface();
+
+	//debug
+	//ControlField::Instance().__drawControlField();
 
 	//Sleep(500);
 	/*test_frameTime = (float)(clock() - start) / CLOCKS_PER_SEC;

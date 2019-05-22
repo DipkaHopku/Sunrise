@@ -25,7 +25,7 @@ using std::endl;
 
 #define MAIN_MENU_TITLE "Sunrise"
 
-const float BUTTON_COLOR_RGB[4] = {0.f/255, 0.f/255, 0.f/255, 63.f / 255, };
+const float BUTTON_COLOR_RGB[4] = {0.f/255, 0.f/255, 0.f/255, 63.f/255};
 
 enum class ButtonType {
 	START,
@@ -71,9 +71,13 @@ public:
 	string getTitle() const;
 };*/
 
+class UserInterface;
+
 class UIItem;
 
 class ActiveUIItem;
+
+class UIItemsContainer;
 
 //MenuItemContainer* menuItemContainer;
 
@@ -120,6 +124,24 @@ public:
 
 	//подготовка к отрисовке следующего кадра. результат - нажатие кнопок мыши не провоцирует начала выполнения функций активных элементов интерфейса. на новом кадре положения элементов интрефейсов может меняться
 	void clearControlField();
+
+	//debug
+	//void __drawControlField();
+};
+
+//---------------------------------------------------------------------------------------------
+//class Drawer declaration
+
+static class UIItemDrawer {
+	friend class UserInterface;
+	friend class UIItemsContainer;
+
+private:
+	static void drawUIItem(UIItem*);
+
+	static void setPosition(UIItem* UIItem, int, int);
+
+	static void updateContainerProperties(UIItemsContainer*);
 };
 
 //---------------------------------------------------------------------------------------------
@@ -127,44 +149,59 @@ public:
 
 class UserInterface {
 private:
+	Orientation _orientation = Orientation::VERTICAL;
+	VerticalAlign _verticalAlign = VerticalAlign::MIDDLE;
+	HorizontalAlign _horizontalAlign = HorizontalAlign::MIDDLE;
+
 	UIItemsContainer* _UIItemContainer = nullptr;
-	int _windowWidth = 0;
-	int _windowHeight = 0;
+	//int _windowWidth = 0;
+	//int _windowHeight = 0;
 
 	UserInterface();
 	~UserInterface();
 	UserInterface(const UserInterface&) = delete;
 	UserInterface& operator=(const UserInterface&) = delete;
 public:
-	static UserInterface& Instance();
-
-	Orientation _orientation = Orientation::VERTICAL;
-	VerticalAlign _verticalAlign = VerticalAlign::MIDDLE;
-	HorizontalAlign _horizontalAlign = HorizontalAlign::MIDDLE;
+	static UserInterface& Instance();	
 
 	void setUIItemsContainer(UIItemsContainer*);
 
-	void drawUserInterface();
+	void updateContainerProperties();
+
+	void drawUserInterface() const;
 };
 
 //---------------------------------------------------------------------------------------------
 //class UserInterfaceItem declaration
 
 class UIItem {
+	friend class UIItemDrawer;
+
+private: //не наследуется
+	virtual void drawUIItem() const = 0;
 protected:
 	int _xPos = 0, _yPos = 0;
 	int _width = 0, _height = 0;
 	int _paddingSize = 0;
 	int _marginSize = 0; //работают только по оси ориентации контейнера
 
+	//virtual void drawUIItem() const = 0;
+	virtual void setPosition(int, int);
 public:
+	virtual ~UIItem() = default;
+
 	//получение размеров элемента интерфейса
 	//arguments:
 	//#1 - width
 	//#2 - height
 	//#3 - marginSize
-	virtual void getUIItemSizes(int*, int*, int*) const = 0;
-	virtual void drawUIItem() const = 0; // const = 0; TODO
+	//virtual void getUIItemSizes(int*, int*, int*) const = 0;
+
+	//virtual void setPosition(int, int) = 0;
+
+	void getUIItemSizes(int*, int*, int*) const;
+
+	//virtual void drawUIItem() const = 0; // скрыл
 };
 
 //---------------------------------------------------------------------------------------------
@@ -188,6 +225,8 @@ public:
 
 //class UIItemsContainer : private UIItem { //нельзя преобразовывать указатель в UIItem
 class UIItemsContainer : public UIItem {
+	friend class UIItemDrawer;
+
 private:
 	//унаследованные:
 	//int _xPos = 0, _yPos = 0;
@@ -203,14 +242,20 @@ private:
 	//UIItemsContainer* _parentContainer = nullptr;
 	vector<UIItem*> _UIItems;
 
+	void drawUIItem() const;
+	void updateContainerProperties();
+
+	virtual void setPosition(int, int) override;
 public:
 	//UIItemsContainer(UIItemsContainer*, Orientation, VerticalAlign, HorizontalAlign) noexcept;
 	UIItemsContainer(Orientation, VerticalAlign, HorizontalAlign) noexcept;
 	~UIItemsContainer();
 
-	void getUIItemSizes(int*, int*, int*) const; //скрыта
+	//void getUIItemSizes(int*, int*, int*) const; //наследуется
 
-	void drawUIItem() const;
+	//void setPosition(int, int); //наследуется
+
+	//void drawUIItem() const; //скрыл
 	//void drawUIElement();
 	//void onClick() const;
 

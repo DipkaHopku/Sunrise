@@ -34,7 +34,7 @@ const map<const FontName, const FontLoadProperties> fontsLoadData = {
 	{FontName::TITLE, FontLoadProperties(
 		"resources/maturasc.ttf", 
 		"Sunrise", 
-		64)},
+		128)},
 	{FontName::BUTTON, FontLoadProperties(
 		"resources/maturasc.ttf",
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ",
@@ -237,16 +237,16 @@ void loadFont(FontName fontname, FT_Library& library, int DPI) {
 		FT_GlyphSlot glyph = face->glyph;
 
 		CharProperties charProperties;
-		/*charData.bitmapBufferWidth = glyph->bitmap.width;
-		charData.bitmapBufferHeight = glyph->bitmap.rows;
-		charData.bitmapBuffer = new unsigned char[glyph->bitmap.width * glyph->bitmap.rows];
-		std::memcpy(charData.bitmapBuffer, glyph->bitmap.buffer, sizeof(unsigned char) * (glyph->bitmap.width * glyph->bitmap.rows));*/
+		
 		charProperties.width = glyph->bitmap.width;
 		charProperties.height = glyph->bitmap.rows;
 
-		charProperties.bearingX = glyph->metrics.horiBearingX;
-		charProperties.bearingY = glyph->metrics.horiBearingY;
-		charProperties.advance = glyph->metrics.horiAdvance;
+		/*charProperties.bearingX = glyph->metrics.horiBearingX/64; //возвращает в 1/64 пикселя
+		charProperties.bearingY = glyph->metrics.horiBearingY/64;
+		charProperties.advance = glyph->metrics.horiAdvance/64;*/
+		charProperties.bearingX = glyph->bitmap_left;
+		charProperties.bearingY = glyph->bitmap_top;
+		charProperties.advance = glyph->advance.x/64; //возвращает в 1/64 пикселя
 
 		auto _bitmapBuffer = glyph->bitmap.buffer;
 		auto _data = new unsigned char[charProperties.width * charProperties.height * 4];
@@ -259,43 +259,8 @@ void loadFont(FontName fontname, FT_Library& library, int DPI) {
 		charProperties.textureID = SOIL_create_OGL_texture(_data, charProperties.width, charProperties.height, 4, SOIL_CREATE_NEW_ID, SOIL_FLAG_DDS_LOAD_DIRECT);
 		delete[] _data;
 
-		fontProperties.setIndents(charProperties.height - charProperties.bearingY, charProperties.bearingY);
+		fontProperties.setIndents(charProperties.bearingY, charProperties.height - charProperties.bearingY);
 		fontProperties.addCharProperties(charCode, &charProperties);
-
-		/*for (int y = 0; y < charData.bitmapBufferHeight; ++y) {
-			for (int x = 0; x < charData.bitmapBufferWidth; ++x) {
-				//const int a = glyph->bitmap.buffer[y * pitch + x]; //Получение прозрачности пикселя
-				const int a = charData.bitmapBuffer[y * charData.bitmapBufferWidth + x];
-				if (a > 127) cout << "*";
-				else if (a > 63) cout << ".";
-				else cout << " ";
-			}
-			cout << endl;
-		}*/
-
-		/*// Получение размеров глифа
-		const int width = glyph->bitmap.width;
-		const int height = glyph->bitmap.rows;
-		//const int pitch = glyph->bitmap.pitch;
-		//const int metrics = glyph->metrics;*/
-
-		/*// Вывод символа в консоли
-		for (int y = 0; y < charData.bitmapBufferHeight; ++y) {
-			for (int x = 0; x < charData.bitmapBufferWidth; ++x) {
-				// Получение прозрачности точки (x, y)
-				//const int a = glyph->bitmap.buffer[y * pitch + x];
-				const int a = glyph->bitmap.buffer[y * charData.bitmapBufferWidth + x];
-
-				if (a > 127) {
-					cout << "*";
-				} else if (a > 63) {
-					cout << ".";
-				} else {
-					cout << " ";
-				}
-			}
-			cout << endl;
-		}*/
 	}
 
 	fontsData.insert(pair<FontName, FontProperties>(fontname, fontProperties));
@@ -390,9 +355,10 @@ void drawString( //позиции для отрисовки каждого символа должны быть известны до
 		int _xPosNextChar = xPos, _yPosNextChar = yPos;
 		int _upperIndent, _bottomIndent;
 		_fontData->second.getIndents(&_upperIndent, &_bottomIndent);
-		_yPosNextChar -= _upperIndent;
+		_yPosNextChar += _upperIndent;
 
 		glColor4fv(color); //цвет символа
+		//glColor4fv(BUTTON_FONT_COLOR_RGB);
 
 		for (int i = 0; i < string.length(); i++) {
 			_xPosNextChar = drawChar(_xPosNextChar, _yPosNextChar, fontName, string[i]); //координаты origin-точки
