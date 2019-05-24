@@ -12,6 +12,7 @@
 #include <ctime>
 
 #include "fonts.h"
+#include "gameplay.h"
 
 using std::map;
 using std::string;
@@ -29,11 +30,25 @@ const float BUTTON_COLOR_RGB[4] = { 0.f / 255, 0.f / 255, 0.f / 255, 255.f / 255
 //const float BUTTON_COLOR_RGB[4] = {0.f/255, 0.f/255, 0.f/255, 63.f/255};
 //const float BUTTON_COLOR_RGB[4] = { 0.f / 255, 0.f / 255, 0.f / 255, 0.f / 255 };
 
+enum class ApplicationState {
+	APPLICATION_LAUNCH,
+	MAIN_MENU,
+	BATTLE,
+	LOAD_MENU,
+	OPTIONS
+};
+
 enum class ButtonType {
 	START,
 	LOAD,
 	OPTIONS,
-	EXIT
+	EXIT,
+	BACK,
+	APPLY
+};
+
+enum class CheckBoxType {
+	FULLSCREEN
 };
 
 enum class LabelType {
@@ -84,26 +99,48 @@ class UIItemsContainer;
 
 //MenuItemContainer* menuItemContainer;
 
-//---------------------------------------------------------------------------------------------
-//class Drawer declaration
 
-static class UIItemDrawer {
-	friend class UserInterface;
-	friend class UIItemsContainer;
+
+//---------------------------------------------------------------------------------------------
+//class ApplicationStateController declaration
+
+static class ApplicationStateController {
+	friend void gameplayProcessing();
 
 private:
-	static void drawUIItem(UIItem*);
+	static void setApplicationState(ApplicationState);
 
-	static void setPosition(UIItem* UIItem, int, int);
-
-	static void updateContainerProperties(UIItemsContainer*);
+	static ApplicationState getApplicationState();
 };
+
+
+
+//---------------------------------------------------------------------------------------------
+//class ApplicationStateNextController declaration
+
+static class ApplicationStateNextController {
+	friend void gameplayProcessing();
+	friend void callback_optionsButton_onClick();
+
+private:
+	static void setApplicationStateNext(ApplicationState);
+
+	static ApplicationState getApplicationStateNext();
+};
+
+
 
 //---------------------------------------------------------------------------------------------
 //class UserInterface declaration
 
 class UserInterface {
+	friend class ApplicationStateController;
+	friend class ApplicationStateNextController;
+
 private:
+	ApplicationState _applicationState = ApplicationState::APPLICATION_LAUNCH;
+	ApplicationState _applicationStateNext = ApplicationState::APPLICATION_LAUNCH;
+
 	int _displayWidth = 0;
 	int _displayHeight = 0;
 	ActiveGraphicItem*** _controlField = nullptr;
@@ -166,13 +203,46 @@ public:
 	//void updateContainerProperties(); //скрыт
 
 	void drawUserInterface() const;
+
+	//bool setApplicationState(ApplicationState);
+	void setApplicationState(ApplicationState);
+
+	ApplicationState getApplicationState() const;
+
+	//возвращает true, если установить следующее состояние удалось, и false, если не удалось
+	bool setApplicationStateNext(ApplicationState);
+
+	ApplicationState getApplicationStateNext() const;
 };
+
+
+
+//---------------------------------------------------------------------------------------------
+//class GraphicItem declaration
 
 class GraphicItem { //(visualObject/visualItem/graphicItem
 protected:
 	int _xPos = 0, _yPos = 0;
 };
-//class UIItem : public GraphicObject {
+
+
+
+//---------------------------------------------------------------------------------------------
+//class Drawer declaration
+
+static class UIItemDrawer {
+	friend class UserInterface;
+	friend class UIItemsContainer;
+
+private:
+	static void drawUIItem(UIItem*);
+
+	static void setPosition(UIItem* UIItem, int, int);
+
+	static void updateContainerProperties(UIItemsContainer*);
+};
+
+
 
 //---------------------------------------------------------------------------------------------
 //class UserInterfaceItem declaration
@@ -180,8 +250,8 @@ protected:
 class UIItem : public virtual GraphicItem {
 	friend class UIItemDrawer;
 
-private: //не наследуется
-	virtual void drawUIItem() const = 0;
+private: 
+	virtual void drawUIItem() const = 0; //наследуется, т.к. интерфейс
 protected:
 	//int _xPos = 0, _yPos = 0;
 	int _width = 0, _height = 0;
@@ -233,7 +303,8 @@ protected:
 
 public:
 	virtual void onClick() const = 0;
-	virtual void onMouseOver(bool) = 0;
+	//virtual void onMouseOver(bool) = 0;
+	virtual void onMouseOver(bool);
 };
 
 //---------------------------------------------------------------------------------------------
@@ -264,7 +335,17 @@ private:
 	virtual void setPosition(int, int) override;
 public:
 	//UIItemsContainer(UIItemsContainer*, Orientation, VerticalAlign, HorizontalAlign) noexcept;
+
 	UIItemsContainer(Orientation, VerticalAlign, HorizontalAlign) noexcept;
+
+	/*
+	arguments:
+	#1 - orientation
+	#2 - vertical Align
+	#3 - horizontal Align
+	#4 - margin size
+	*/
+	UIItemsContainer(Orientation, VerticalAlign, HorizontalAlign, int) noexcept;
 	//UIItemsContainer(UIItemsContainer &UIItemsContainer);
 	~UIItemsContainer();
 
@@ -283,11 +364,18 @@ public:
 	//void updateContainerProperties(); //скрыта
 };
 
+
+
 //---------------------------------------------------------------------------------------------
 //fuctions declaration
 
 void createMainMenu();
 //UIItemsContainer* createMainMenu();
+
+//void createLoadMenu();
+
+void createOptionsMenu();
+
 
 //---------------------------------------------------------------------------------------------
 //callbacks declaration

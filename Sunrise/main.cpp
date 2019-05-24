@@ -126,8 +126,8 @@ int main(void) {
 
 	//glPointSize(1); //точки не рисую
 
-	//загружаем все текстуры
-	loadTextures();
+	//загружаем все текстуры //перенесено в APPLICATION_LAUNCH
+	//loadTextures(); //128 мс
 
 	//Устанавливаем разрешение монитора
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -142,7 +142,7 @@ int main(void) {
 	glfwGetMonitorPhysicalSize(monitor, &displayWidth_mm, NULL);
 
 	//загружаем шрифты
-	freeTypeInit(mode->width * MM_IN_ONE_INCH / displayWidth_mm);
+	freeTypeInit(mode->width * MM_IN_ONE_INCH / displayWidth_mm); //23мс
 	
 	//Устанавливаем размер окна на начало работы приложения
 	UserInterface::Instance().setWindowSize(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);

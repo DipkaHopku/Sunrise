@@ -14,12 +14,43 @@
 using std::cout;
 using std::endl;
 
-enum class ApplicationState {
-	APPLICATION_LAUNCH,
-	MAIN_MENU,
-	BATTLE,
-	LOAD_MENU,
-	OPTIONS
+//---------------------------------------------------------------------------------------------
+//global variables and types
+
+
+
+
+
+/*//---------------------------------------------------------------------------------------------
+//class ApplicationStateController declaration
+
+static class ApplicationStateController {
+	friend void gameplayProcessing();
+
+private:
+	static void setApplicationState(ApplicationState);
+
+	static ApplicationState getApplicationState();
 };
+
+
+
+//---------------------------------------------------------------------------------------------
+//class ApplicationStateNextController declaration
+
+static class ApplicationStateNextController {
+	friend void gameplayProcessing();
+	friend void callback_optionsButton_onClick();
+
+private:
+	static void setApplicationStateNext(ApplicationState);
+
+	static ApplicationState getApplicationStateNext();
+};*/
+
+
+
+//---------------------------------------------------------------------------------------------
+//functions declaration
 
 void gameplayProcessing();

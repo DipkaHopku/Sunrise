@@ -8,6 +8,9 @@
 //bool** _controlField = nullptr;
 //static int ID = -1;
 
+//---------------------------------------------------------------------------------------------
+//buttons
+
 class ButtonProperties {
 private:
 	string _title;
@@ -43,13 +46,50 @@ void callback_startButton_onClick();
 void callback_loadButton_onClick();
 void callback_optionsButton_onClick();
 void callback_exitButton_onClick();
+void callback_backButton_onClick();
+void callback_applyButton_onClick();
 
 const map<const ButtonType, const ButtonProperties> buttonsData = {
 	{ButtonType::START, ButtonProperties(	"Start",	FontName::BUTTON,	callback_startButton_onClick)},
 	{ButtonType::LOAD, ButtonProperties(	"Load",		FontName::BUTTON,	callback_loadButton_onClick)},
 	{ButtonType::OPTIONS, ButtonProperties(	"Options",	FontName::BUTTON,	callback_optionsButton_onClick)},
-	{ButtonType::EXIT, ButtonProperties(	"Exit",		FontName::BUTTON,	callback_exitButton_onClick)}
+	{ButtonType::EXIT, ButtonProperties(	"Exit",		FontName::BUTTON,	callback_exitButton_onClick)},
+	{ButtonType::BACK, ButtonProperties(	"Back",		FontName::BUTTON,	callback_backButton_onClick)},
+	{ButtonType::APPLY, ButtonProperties(	"Apply",	FontName::BUTTON,	callback_applyButton_onClick)}
 };
+
+
+
+//---------------------------------------------------------------------------------------------
+//checkBox
+
+class CheckBoxProperties {
+private:
+	string _valueName;
+
+public:
+	void(*callback)();
+
+	CheckBoxProperties(string valueName, void(*callback)()) {
+		_valueName = valueName;
+		this->callback = callback;
+	}
+
+	string getValueName() const {
+		return _valueName;
+	}
+};
+
+void callback_fullscreenCheckBox_onClick();
+
+const map<const CheckBoxType, const CheckBoxProperties> checkBoxesData = {
+	{CheckBoxType::FULLSCREEN, CheckBoxProperties("fullscreen",	callback_startButton_onClick)}
+};
+
+
+
+//---------------------------------------------------------------------------------------------
+//label
 
 class LabelProperties {
 private:
@@ -75,24 +115,34 @@ public:
 
 const map<const LabelType, const LabelProperties> labelsData = {
 	{LabelType::TITLE, LabelProperties(		"Sunrise",		FontName::TITLE)},
-	{LabelType::OPTIONS, LabelProperties(	"Options",		FontName::SIMPLE_TEXT)},
+	{LabelType::OPTIONS, LabelProperties(	"Options",		FontName::BUTTON)},
 	{LabelType::FULLSCREEN, LabelProperties("Fullscreen:",	FontName::SIMPLE_TEXT)}
 };
 
+
+
 //---------------------------------------------------------------------------------------------
-//class Drawer definition
+//class ApplicationStateController definition
 
-void UIItemDrawer::drawUIItem(UIItem* UIItem) {
-	UIItem->drawUIItem();
+void ApplicationStateController::setApplicationState(ApplicationState applicationState) {
+	UserInterface::Instance().setApplicationState(applicationState);
 }
 
-void UIItemDrawer::setPosition(UIItem* UIItem, int xPos, int yPos) {
-	UIItem->setPosition(xPos, yPos);
+ApplicationState ApplicationStateController::getApplicationState() {
+	return UserInterface::Instance()._applicationState;
 }
 
-//нужно для UserInterface
-void UIItemDrawer::updateContainerProperties(UIItemsContainer* UIItemsContainer) {
-	UIItemsContainer->updateContainerProperties();
+
+
+//---------------------------------------------------------------------------------------------
+//class ApplicationStateNextController definition
+
+void ApplicationStateNextController::setApplicationStateNext(ApplicationState ApplicationStateNext) {
+	UserInterface::Instance().setApplicationStateNext(ApplicationStateNext);
+}
+
+ApplicationState ApplicationStateNextController::getApplicationStateNext() {
+	return UserInterface::Instance()._applicationStateNext;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -293,6 +343,56 @@ void UserInterface::drawUserInterface() const {
 	}
 }
 
+//bool
+void UserInterface::setApplicationState(ApplicationState applicationState) {
+	//if (applicationState == _applicationStateNext) {
+	_applicationState = applicationState;
+}
+
+ApplicationState UserInterface::getApplicationState() const {
+	return _applicationState;
+}
+
+bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNext) {
+	if (applicationStateNext == _applicationState) {
+		_applicationStateNext = applicationStateNext;
+		return true;
+	}
+	else if (applicationStateNext == ApplicationState::MAIN_MENU && _applicationState == ApplicationState::APPLICATION_LAUNCH) { //проверка на то что до этого не нажимались другие кнопки
+		_applicationStateNext = applicationStateNext;
+		createMainMenu();
+		return true;
+	}
+	else if (applicationStateNext == ApplicationState::OPTIONS && _applicationState == ApplicationState::MAIN_MENU) { //проверка на то что до этого не нажимались другие кнопки
+		_applicationStateNext = applicationStateNext; //= ApplicationState::OPTIONS
+		createOptionsMenu();
+		return true;
+	}
+	return false;
+}
+
+ApplicationState UserInterface::getApplicationStateNext() const {
+	return _applicationStateNext;
+}
+
+
+
+//---------------------------------------------------------------------------------------------
+//class Drawer definition
+
+void UIItemDrawer::drawUIItem(UIItem* UIItem) {
+	UIItem->drawUIItem();
+}
+
+void UIItemDrawer::setPosition(UIItem* UIItem, int xPos, int yPos) {
+	UIItem->setPosition(xPos, yPos);
+}
+
+//нужно для UserInterface
+void UIItemDrawer::updateContainerProperties(UIItemsContainer* UIItemsContainer) {
+	UIItemsContainer->updateContainerProperties();
+}
+
 
 
 //---------------------------------------------------------------------------------------------
@@ -312,6 +412,15 @@ void UIItem::setPosition(int xPos, int yPos) {
 
 
 //---------------------------------------------------------------------------------------------
+//class ActiveGraphicItem definition
+
+void ActiveGraphicItem::onMouseOver(bool mouseOver) {
+	_mouseOver = mouseOver;
+}
+
+
+
+//---------------------------------------------------------------------------------------------
 //class UIItemsContainer definition
 
 void UIItemsContainer::drawUIItem() const { //const {
@@ -322,13 +431,25 @@ void UIItemsContainer::drawUIItem() const { //const {
 }
 
 UIItemsContainer::UIItemsContainer(
-	Orientation orientation, 
-	VerticalAlign verticalAlign, 
+	Orientation orientation,
+	VerticalAlign verticalAlign,
 	HorizontalAlign horizontalAlign
 ) noexcept {
 	_orientation = orientation;
 	_verticalAlign = verticalAlign;
 	_horizontalAlign = horizontalAlign;
+}
+
+UIItemsContainer::UIItemsContainer(
+	Orientation orientation, 
+	VerticalAlign verticalAlign, 
+	HorizontalAlign horizontalAlign,
+	const int marginSize
+) noexcept {
+	_orientation = orientation;
+	_verticalAlign = verticalAlign;
+	_horizontalAlign = horizontalAlign;
+	_marginSize = marginSize;
 }
 
 UIItemsContainer::~UIItemsContainer() {
@@ -446,6 +567,8 @@ void UIItemsContainer::addUIItem(UIItem* UIItem) {
 	}*/
 }
 
+
+
 //---------------------------------------------------------------------------------------------
 //class Label definition
 
@@ -514,8 +637,11 @@ public:
 	}*/
 };
 
+
+
 //---------------------------------------------------------------------------------------------
 //class Button definition
+
 class Button : public UIItem, public ActiveGraphicItem {
 private:
 	//унаследованные:
@@ -574,7 +700,6 @@ private:
 
 			glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_CONSTANT_ALPHA); //инвертирую альфу и рисую. цвет не blendColor?
 			glBlendColor(1, 1, 1, 1);
-			//glBlendEquation(GL_FUNC_ADD);
 
 			drawString(
 				_xPos + _paddingSize,
@@ -584,7 +709,6 @@ private:
 				BUTTON_FONT_COLOR_RGB);
 
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			//glDisable(GL_ALPHA_TEST);
 
 			//объект для отображения
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -593,9 +717,9 @@ private:
 			//glColor4f(1, 1, 1, 1);
 			glColor4fv(BUTTON_FONT_COLOR_RGB);
 			glBegin(GL_QUADS);
-			glVertex2i(_xPos, _yPos);
+			glVertex2i(_xPos, _yPos); //самый левый верхний пиксель квардрата будет _xPos, _yPos, а самый левый верхний пиксель окна в системе координат опенгл это (0,0)
 			glVertex2i(_xPos + _width, _yPos);
-			glVertex2i(_xPos + _width, _yPos + _height);
+			glVertex2i(_xPos + _width, _yPos + _height); //самый правый нижний пиксель квадрата будет _xPos + _width - 1, _yPos + _height - 1, а самый правый нижний пиксель окна в системе координат опенгл это (window width -1, window height -1)
 			glVertex2i(_xPos, _yPos + _height);
 			glEnd();
 
@@ -671,30 +795,6 @@ public:
 		if (marginSize != nullptr) *marginSize = _marginSize;
 	}*/
 
-	/*void setPosition(int xPos, int yPos) {
-		_xPos = xPos;
-		_yPos = yPos;
-	}*/
-
-	/*void drawUIItem() const {
-		ControlField::Instance().setActiveUIItemControlField(_xPos, _width, _yPos, _height, (ActiveUIItem*)this);
-
-		glColor4fv(BUTTON_COLOR_RGB);
-		glBegin(GL_QUADS);
-		glVertex2i(_xPos, _yPos);
-		glVertex2i(_xPos + _width, _yPos);
-		glVertex2i(_xPos + _width, _yPos + _height);
-		glVertex2i(_xPos, _yPos + _height);
-		glEnd();
-
-		drawString(
-			_xPos + _paddingSize,
-			_yPos + _paddingSize,
-			_fontName,
-			_title,
-			BUTTON_FONT_COLOR_RGB);
-	}*/
-
 	void onClick() const {
 		/*cout << "GraphicItem::_xPos : " << GraphicItem::_xPos << endl; //при виртуальном наследовании всё одинаковое
 		cout << "ActiveGraphicItem::_xPos : " << ActiveGraphicItem::_xPos << endl;
@@ -703,13 +803,111 @@ public:
 		_onClickCallback();
 	}
 
-	void onMouseOver(bool mouseOver) {
+	/*void onMouseOver(bool mouseOver) { //реализован как виртуальный класса родителя
 		_mouseOver = mouseOver;
-	}
+	}*/
 
 	//debug
 	//string __getTitle() {return _title;}
 };
+
+
+
+//---------------------------------------------------------------------------------------------
+//class CheckBox definition
+
+class CheckBox : public UIItem, public ActiveGraphicItem {
+private:
+	//унаследованные:
+	//int _xPos = 0, _yPos = 0;
+	//int _width = 0, _height = 0;
+	//int _paddingSize = 0;
+	//int _marginSize = 0;
+	//void(*_callback)();
+
+	string _valueName;
+	bool _condition = false;
+
+	void drawUIItem() const {
+		UserInterface::Instance().setActiveGraphicItemControlField(_xPos, _width, _yPos, _height, (ActiveGraphicItem*)this);
+
+		if (_mouseOver) {
+
+		}
+		else {
+			glColor4f(1, 1, 1, 1);
+			glBegin(GL_QUADS);
+			glVertex2i(_xPos, _yPos); //самый левый верхний пиксель квардрата будет _xPos, _yPos, а самый левый верхний пиксель окна в системе координат опенгл это (0,0)
+			glVertex2i(_xPos + _width, _yPos);
+			glVertex2i(_xPos + _width, _yPos + _height); //самый правый нижний пиксель квадрата будет _xPos + _width - 1, _yPos + _height - 1, а самый правый нижний пиксель окна в системе координат опенгл это (window width -1, window height -1)
+			glVertex2i(_xPos, _yPos + _height);
+			glEnd();
+
+			//рисуем статичное оформление
+			glColor4f(1, 0, 0, 0.5);
+			//glColor4fv(BUTTON_FONT_COLOR_RGB);
+			//glEnable(GL_POINT_SMOOTH);
+			int _lineWidth = 4; //чётное
+			//int _pointSize = _lineWidth;
+			_lineWidth++; //50% прозрачности полоса в 1 пиксель сверху и снизу
+			glLineWidth(_lineWidth);
+
+			glEnable(GL_LINE_SMOOTH);
+			glVertex2i(_xPos, _yPos); //самый левый верхний пиксель квардрата будет _xPos, _yPos, а самый левый верхний пиксель окна в системе координат опенгл это (0,0)
+			glVertex2i(_xPos + _width, _yPos);
+			glVertex2i(_xPos + _width, _yPos + _height); //самый правый нижний пиксель квадрата будет _xPos + _width - 1, _yPos + _height - 1, а самый правый нижний пиксель окна в системе координат опенгл это (window width -1, window height -1)
+			glVertex2i(_xPos, _yPos + _height);
+			glEnd();
+
+			/*
+			glEnable(GL_LINE_SMOOTH);
+			glEnable(GL_POINT_SMOOTH);
+			int _lineWidth = 4; //чётное
+			int _pointSize = _lineWidth;
+			_lineWidth++; //50% прозрачности полоса в 1 пиксель сверху и снизу
+			glLineWidth(_lineWidth);
+			glPointSize(_pointSize);
+
+			glBegin(GL_LINE_LOOP);
+			glVertex2i(_xPos + _pointSize - _lineWidth / 2, _yPos + _height - _lineWidth / 2 - 2);
+			glVertex2i(_xPos - _pointSize + _lineWidth / 2 + _width, _yPos + _height - _lineWidth / 2 - 2);
+			glEnd();
+
+			glBegin(GL_POINTS);
+			glVertex2i(_xPos + _lineWidth - _lineWidth / 2, _yPos + _height - _lineWidth / 2 - 2);
+			glVertex2i(_xPos - _lineWidth + _lineWidth / 2 + _width, _yPos + _height - _lineWidth / 2 - 2);
+			glEnd();
+			*/
+		}
+	}
+
+public:
+	//устанавливается всё кроме позиции чекбокса, её устанавливает контейнер
+	CheckBox(const CheckBoxType checkBoxType, const int marginSize) { //noexcept {
+		auto _checkBoxData = checkBoxesData.find(checkBoxType);
+		if (_checkBoxData != checkBoxesData.end()) {
+			_valueName = _checkBoxData->second.getValueName();
+			_onClickCallback = _checkBoxData->second.callback;
+		}
+		_paddingSize = 0;
+		_marginSize = marginSize;
+
+		int _simpleTextSize;
+		getStringProperties(FontName::SIMPLE_TEXT, "A", nullptr, &_simpleTextSize);
+		_simpleTextSize *= 1.2;
+		_width = _simpleTextSize;
+		_height = _simpleTextSize;
+	}
+
+	~CheckBox() {
+	}
+
+	void onClick() const {
+		_onClickCallback();
+	}
+};
+
+
 
 //---------------------------------------------------------------------------------------------
 //functions
@@ -747,9 +945,58 @@ void createMainMenu() {
 	//return _menuItemsContainer;
 }
 
+void createOptionsMenu() {
+	UIItemsContainer* _optionsMenuItemsContainer = new UIItemsContainer(
+		Orientation::VERTICAL,
+		VerticalAlign::MIDDLE,
+		HorizontalAlign::MIDDLE
+	);
+
+	_optionsMenuItemsContainer->addUIItem(new Label(LabelType::OPTIONS, 0, 40));
+
+	//строки опции
+	UIItemsContainer* _optionsContainer = new UIItemsContainer(
+		Orientation::VERTICAL,
+		VerticalAlign::MIDDLE,
+		HorizontalAlign::LEFT
+	);
+
+	//фуллскрин
+	UIItemsContainer* _optionContainer = new UIItemsContainer(
+		Orientation::HORIZONTAL,
+		VerticalAlign::MIDDLE,
+		HorizontalAlign::MIDDLE
+	);
+
+	_optionContainer->addUIItem(new Label(LabelType::FULLSCREEN, 10, 40));
+	_optionContainer->addUIItem(new CheckBox(CheckBoxType::FULLSCREEN, 10));
+
+	_optionsContainer->addUIItem(_optionContainer);
+
+	_optionsMenuItemsContainer->addUIItem(_optionsContainer);
+
+	//назад и принять
+	UIItemsContainer* _backAndApplyContainer = new UIItemsContainer(
+		Orientation::HORIZONTAL,
+		VerticalAlign::MIDDLE,
+		HorizontalAlign::MIDDLE,
+		50
+	);
+
+	_backAndApplyContainer->addUIItem(new Button(ButtonType::BACK, 10, 200));
+	_backAndApplyContainer->addUIItem(new Button(ButtonType::APPLY, 10, 200));
+
+	_optionsMenuItemsContainer->addUIItem(_backAndApplyContainer);
+
+	UserInterface::Instance().setUIItemsContainer(_optionsMenuItemsContainer);
+}
+
+
+
 //---------------------------------------------------------------------------------------------
 //buttons callbacks
 
+//main menu
 void callback_startButton_onClick() {
 	cout << "start button is pressed" << endl;
 }
@@ -759,11 +1006,22 @@ void callback_loadButton_onClick() {
 }
 
 void callback_optionsButton_onClick() {
-	cout << "options button is pressed" << endl;
+	//cout << "options button is pressed" << endl;
+	UserInterface::Instance().setApplicationStateNext(ApplicationState::OPTIONS);
 }
 
 void callback_exitButton_onClick() {
 	cout << "exit button is pressed" << endl;
+}
+
+//options
+void callback_backButton_onClick() {
+	//cout << "options button is pressed" << endl;
+	cout << "back button is pressed" << endl;
+}
+
+void callback_applyButton_onClick() {
+	cout << "apply button is pressed" << endl;
 }
 
 //---------------------------------------------------------------------------------------------

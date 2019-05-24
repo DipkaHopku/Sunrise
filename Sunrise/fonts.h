@@ -40,6 +40,13 @@ enum class FontName {
 
 void freeTypeInit(int);
 
+/*
+arguments:
+#1 - fontName,
+#2-  string,
+#3 - width,
+#4 - height
+*/
 void getStringProperties(FontName, string, int*, int*);
 
 /*

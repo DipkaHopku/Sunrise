@@ -1,7 +1,7 @@
 #include "gameplay.h"
 
-static ApplicationState applicationState = ApplicationState::APPLICATION_LAUNCH;
-static ApplicationState applicationStateNext = ApplicationState::MAIN_MENU;
+//static ApplicationState applicationState = ApplicationState::APPLICATION_LAUNCH;
+//static ApplicationState applicationStateNext = ApplicationState::APPLICATION_LAUNCH;
 
 //---------------------------------------------------------------------------------------------
 //functions
@@ -9,15 +9,27 @@ static ApplicationState applicationStateNext = ApplicationState::MAIN_MENU;
 void gameplayProcessing() {
 	UserInterface::Instance().clearControlField();
 
+	//получаем то каким должнон было быть следующее состояние
+	ApplicationState _applicationStateNext = ApplicationStateNextController::getApplicationStateNext();
+	//следующее состояние наступило - устанавливаем его текущим
+	ApplicationStateController::setApplicationState(_applicationStateNext);
+	ApplicationState _applicationState = ApplicationStateNextController::getApplicationStateNext();
+
 	int _windowWidth, _windowHeight;
 	UserInterface::Instance().getWindowSize(&_windowWidth, &_windowHeight);
 
-	switch (applicationState) {
+	switch (_applicationState) {
 	case ApplicationState::APPLICATION_LAUNCH:
-		//UserInterface::Instance().setUIItemsContainer(createMainMenu());
-		createMainMenu();
+		//загружаем все текстуры //перенесено из main
+		loadTextures(); //>128 мс
 
-		applicationState = ApplicationState::MAIN_MENU;
+		//UserInterface::Instance().setUIItemsContainer(createMainMenu());
+		//createMainMenu();
+
+		//applicationState = ApplicationState::MAIN_MENU;
+		ApplicationStateNextController::setApplicationStateNext(ApplicationState::MAIN_MENU);
+		//applicationStateNext = ApplicationState::MAIN_MENU;
+		break;
 
 	case ApplicationState::MAIN_MENU :
 		drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
@@ -43,7 +55,7 @@ void gameplayProcessing() {
 		break;
 
 	case ApplicationState::OPTIONS:
-		//TODO
+		drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
 		break;
 	}
 

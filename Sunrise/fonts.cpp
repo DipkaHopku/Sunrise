@@ -41,7 +41,7 @@ const map<const FontName, const FontLoadProperties> fontsLoadData = {
 		36)},
 	{FontName::SIMPLE_TEXT, FontLoadProperties(
 		"resources/maturasc.ttf",
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ",
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:-,. ",
 		24)},
 	//"ÀÁÂÃÄÅ¨ÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäå¸æçèéêëìíîïðñòóôõö÷øùúûüýþÿ"
 };
@@ -271,25 +271,27 @@ void loadFont(FontName fontname, FT_Library& library, int DPI) {
 
 //âîçâðàùàåò âûñîòó ñòðîêè, øèðèíó ñòðîêè
 void getStringProperties(const FontName fontName, const string string, int* width, int* height) { //, int*** charsLocation) {
-	*width = 0;
-	*height = 0;
+	int _width = 0;
+	int _height = 0;
 	auto _fontData = fontsData.find(fontName);
 	if (_fontData != fontsData.end()) {
 		FontProperties fontProperties = _fontData->second;
 		int upperIndent, bottonIndent;
 		fontProperties.getIndents(&upperIndent, &bottonIndent);
-		*height = upperIndent + bottonIndent;
+		_height = upperIndent + bottonIndent;
 
 		int defaultCharSize = fontsLoadData.at(fontName).getCharSize();
 		for (int i = 0; i < string.length(); i++) {
 			int charWidth = _fontData->second.getCharWidth(string[i]);
 			if (charWidth != 0) {
-				*width += charWidth;
+				_width += charWidth;
 			} else {
-				*width += defaultCharSize;
+				_width += defaultCharSize;
 			}
 		}
 	}
+	if (width != nullptr) *width = _width;
+	if (height != nullptr) *height = _height;
 }
 
 int drawChar(
