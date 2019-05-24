@@ -330,12 +330,20 @@ int drawChar(
 			_yPos = yPos - _bearingY;
 			_width = (_defaultCharSize / 10) * 8;
 
+			glLineWidth((int)_defaultCharSize / 10);
 			glBegin(GL_LINE_LOOP);
 			glVertex2i(_xPos, yPos - _defaultCharSize);			//(0, 0)
 			glVertex2i(xPos + _width, yPos - _defaultCharSize);	//(1, 0)
 			glVertex2i(xPos + _width, yPos);					//(1, 1)
 			glVertex2i(_xPos, yPos);							//(0, 1)
 			glEnd();
+			/*glPointSize((int)_defaultCharSize / 10);
+			glBegin(GL_POINTS);
+			glVertex2i(_xPos, yPos - _defaultCharSize);			//(0, 0)
+			glVertex2i(xPos + _width, yPos - _defaultCharSize);	//(1, 0)
+			glVertex2i(xPos + _width, yPos);					//(1, 1)
+			glVertex2i(_xPos, yPos);							//(0, 1)
+			glEnd();*/
 
 			return xPos + _defaultCharSize;
 		}

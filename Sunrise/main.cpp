@@ -64,6 +64,7 @@ int main(void) {
 	glfwSetWindowSizeCallback(window, callback_windowSize);
 	glfwSetKeyCallback(window, callback_key);
 	glfwSetMouseButtonCallback(window, callback_mouseButton);
+	glfwSetCursorPosCallback(window, callback_cursorPos);
 
 	if (glewInit() != GLEW_OK) {
 		return -1;
@@ -103,6 +104,15 @@ int main(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_POINT_SMOOTH);//если рисовать поточечно, то каждая точка будет смешивать цвет с фоном
+
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	//glClearStencil(0); //работает и без неё
+	//glStencilMask(1); //работает и без неё
+	//glEnable(GL_STENCIL_TEST);
+
+	/*glClearStencil(0);
+	glStencilMask(1);-*
 
 	/*glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);//выход текстурных координат за пределы 0-1
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);*/
@@ -186,12 +196,17 @@ int main(void) {
 		//auto test_startPreparation = clock();
 
 		//Render here
-		glClear(GL_COLOR_BUFFER_BIT); //default
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); GL_STENCIL_BUFFER_BIT
+		//glClear(GL_COLOR_BUFFER_BIT); //default
+		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); //пусть будет так
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); //без этого работает
+		//glClearStencil(0); без этого работает
+		//glStencilMask(1); //работает
 		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glClearColor(0, 0, 0, 0);
+		glClearColor(0, 0, 0, 0); //default?
+		//glClearColor(0, 0, 0, 1);
+		//glClearColor(1, 0, 0, 0);
 
 		//cout << "Time of preparatio: " << (float)(clock() - test_startPreparation) / CLOCKS_PER_SEC << endl;
 		

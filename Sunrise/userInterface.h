@@ -25,7 +25,9 @@ using std::endl;
 
 #define MAIN_MENU_TITLE "Sunrise"
 
-const float BUTTON_COLOR_RGB[4] = {0.f/255, 0.f/255, 0.f/255, 63.f/255};
+const float BUTTON_COLOR_RGB[4] = { 0.f / 255, 0.f / 255, 0.f / 255, 255.f / 255 };
+//const float BUTTON_COLOR_RGB[4] = {0.f/255, 0.f/255, 0.f/255, 63.f/255};
+//const float BUTTON_COLOR_RGB[4] = { 0.f / 255, 0.f / 255, 0.f / 255, 0.f / 255 };
 
 enum class ButtonType {
 	START,
@@ -36,6 +38,7 @@ enum class ButtonType {
 
 enum class LabelType {
 	TITLE,
+	OPTIONS,
 	FULLSCREEN
 };
 
@@ -75,7 +78,7 @@ class UserInterface;
 
 class UIItem;
 
-class ActiveUIItem;
+class ActiveGraphicItem;
 
 class UIItemsContainer;
 
@@ -103,9 +106,12 @@ class UserInterface {
 private:
 	int _displayWidth = 0;
 	int _displayHeight = 0;
-	ActiveUIItem*** _controlField = nullptr;
+	ActiveGraphicItem*** _controlField = nullptr;
 	int _windowWidth = 0;
 	int _windowHeight = 0;
+
+	int _xCursorPos = -1;
+	int _yCursorPos = -1;
 
 	Orientation _orientation = Orientation::VERTICAL;
 	HorizontalAlign _horizontalAlign = HorizontalAlign::MIDDLE;
@@ -136,16 +142,18 @@ public:
 	//#2 - height of window
 	void getWindowSize(int*, int*) const;
 
-	//установка активной зоны элемента интерфейса на экране приложения
+	//установка активной зоны графического объекта на экране приложения
 	//arguments:
-	//#1 - xPos of active UI item left side
-	//#2 - width of active UI item
-	//#3 - yPos of active UI item top side
-	//#4 - height of active UI item
-	//#5 - active UI item pointer
-	void setActiveUIItemControlField(int, int, int, int, ActiveUIItem*);
+	//#1 - xPos of active graphic item left side
+	//#2 - width of active graphic item
+	//#3 - yPos of active graphic item top side
+	//#4 - height of active graphic item
+	//#5 - active graphic item pointer
+	void setActiveGraphicItemControlField(int, int, int, int, ActiveGraphicItem*);
 
-	void triggerActiveUIItemOnClickCallbackAtPoint(int, int);
+	void triggerActiveGraphicItemOnClickCallbackAtPoint(int, int);
+
+	void setCursorPos(int, int);
 
 	//подготовка к отрисовке следующего кадра. результат - нажатие кнопок мыши не провоцирует начала выполнения функций активных элементов интерфейса. на новом кадре положения элементов интрефейсов может меняться
 	void clearControlField();
@@ -160,16 +168,22 @@ public:
 	void drawUserInterface() const;
 };
 
+class GraphicItem { //(visualObject/visualItem/graphicItem
+protected:
+	int _xPos = 0, _yPos = 0;
+};
+//class UIItem : public GraphicObject {
+
 //---------------------------------------------------------------------------------------------
 //class UserInterfaceItem declaration
 
-class UIItem {
+class UIItem : public virtual GraphicItem {
 	friend class UIItemDrawer;
 
 private: //не наследуется
 	virtual void drawUIItem() const = 0;
 protected:
-	int _xPos = 0, _yPos = 0;
+	//int _xPos = 0, _yPos = 0;
 	int _width = 0, _height = 0;
 	int _paddingSize = 0;
 	int _marginSize = 0; //работают только по оси ориентации контейнера
@@ -196,7 +210,7 @@ public:
 //---------------------------------------------------------------------------------------------
 //class ActiveUserInterfaceItem declaration
 
-class ActiveUIItem : public UIItem {
+/*class ActiveUIItem : public UIItem {
 protected:
 	//унаследованные:
 	//int _xPos = 0, _yPos = 0;
@@ -207,6 +221,19 @@ protected:
 	void(*_onClickCallback)();
 public:
 	virtual void onClick() const = 0;
+};*/
+
+//---------------------------------------------------------------------------------------------
+//class ActiveGraphicItem declaration
+
+class ActiveGraphicItem : public virtual GraphicItem {
+protected:
+	bool _mouseOver = false;
+	void(*_onClickCallback)();
+
+public:
+	virtual void onClick() const = 0;
+	virtual void onMouseOver(bool) = 0;
 };
 
 //---------------------------------------------------------------------------------------------
@@ -268,3 +295,4 @@ void createMainMenu();
 void callback_windowSize(GLFWwindow*, int, int);
 void callback_key(GLFWwindow*, int, int, int, int);
 void callback_mouseButton(GLFWwindow*, int, int, int);
+void callback_cursorPos(GLFWwindow*, double, double);

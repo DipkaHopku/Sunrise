@@ -70,56 +70,6 @@ void loadTexture(const TextureName textureName) {
 		SOIL_free_image_data(_data);
 
 		texturesData.insert(pair<TextureName, TextureProperties>(textureName, textureProperties));
-
-		/*unsigned int fbo;
-		glGenFramebuffers(1, &fbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo); //GL_FRAMEBUFFER_EXT
-
-		unsigned int rbo;
-		glGenRenderbuffers(1, &rbo);
-		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, 640, 480);
-
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureProperties.ID, 0);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-		unsigned int texture;
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 640, 480, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_6_5, NULL);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		
-		
-		//glReadBuffer(GL_COLOR_ATTACHMENT0); //_EXT
-		
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-			cout << "complete" << endl;
-			glClearColor(0, 0, 0, 1);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			//glBindTexture(GL_TEXTURE_2D, textureProperties.ID);
-
-			//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureProperties.width, textureProperties.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-			drawTexture(0, 0, textureName);
-			glRasterPos2i(0, 0);
-			glPixelZoom(1.0, -1.0);
-			glDrawPixels(textureProperties.width, textureProperties.height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-			vector<unsigned char> pixels(textureProperties.width * textureProperties.height * 4);
-			//GLubyte* img = (GLubyte*)malloc(textureProperties.width * textureProperties.height * sizeof(GLubyte) * 4);
-			glReadPixels(0, 0, textureProperties.width, textureProperties.height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
-			if (!pixels.empty()) {
-				for (int i = 0; i < textureProperties.width * textureProperties.height * 4; i++)
-					if (pixels[i] != '\0') cout << "p: " << pixels[i];
-				cout << endl;
-			}
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glDeleteFramebuffers(1, &fbo);
-		}*/
 	} else cout << "NullPointerException: texture '" << textureName << "' with filename '" << textureFilenames.at(textureName) << "' is not available" << endl;
 }
 
@@ -130,21 +80,17 @@ void loadTextures() {
 }
 
 void drawTexture(const int xPos, const int yPos, const TextureName textureName) {
-	//auto start2 = clock();
 	auto _textureData = texturesData.find(textureName);
 	if (_textureData != texturesData.end()) {
-		//TextureProperties textureProperties = textureData[textureName];
 		TextureProperties _textureProperties = _textureData->second;
 
 		glColor4f(1, 1, 1, 1); //чтобы текстура имела натуральный цвет
 
 		glEnable(GL_TEXTURE_2D);
-		//auto start = clock();
-
 		glBindTexture(GL_TEXTURE_2D, _textureProperties.ID); //чем меньше колво айди - тем лучше
 
 		/*glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);//выход текстурных координат за пределы 0-1
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);*/
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //сглаживание при уменьшении
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении //NEAREST - по ближайшему пикселю*/
 
@@ -159,11 +105,9 @@ void drawTexture(const int xPos, const int yPos, const TextureName textureName) 
 		glTexCoord2f(1, 1); glVertex2i(xPos + textureProperties.width/2, yPos + textureProperties.height);
 		glTexCoord2f(0.5f, 1); glVertex2i(xPos, yPos + textureProperties.height);*/
 		glEnd();
-		//cout << "processing: " << clock() - start << endl; //не более 1 миллисекунды
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
-		//cout << "processing2: " << clock() - start2 << endl; //не более 1 миллисекунды
 	} //else cout << "Error: texture '" << textureName << "' hasn`t properties" << endl;
 }
 
@@ -213,9 +157,72 @@ void drawScaledTexture(
 		glEnd();
 
 		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_2D);	
 	}
 }
+
+
+
+
+
+
+
+
+
+/*unsigned int fbo;
+		glGenFramebuffers(1, &fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo); //GL_FRAMEBUFFER_EXT
+
+		unsigned int rbo;
+		glGenRenderbuffers(1, &rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, 640, 480);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureProperties.ID, 0);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+		unsigned int texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 640, 480, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_6_5, NULL);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+		//glReadBuffer(GL_COLOR_ATTACHMENT0); //_EXT
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+			cout << "complete" << endl;
+			glClearColor(0, 0, 0, 1);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			//glBindTexture(GL_TEXTURE_2D, textureProperties.ID);
+
+			//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureProperties.width, textureProperties.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			drawTexture(0, 0, textureName);
+			glRasterPos2i(0, 0);
+			glPixelZoom(1.0, -1.0);
+			glDrawPixels(textureProperties.width, textureProperties.height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			vector<unsigned char> pixels(textureProperties.width * textureProperties.height * 4);
+			//GLubyte* img = (GLubyte*)malloc(textureProperties.width * textureProperties.height * sizeof(GLubyte) * 4);
+			glReadPixels(0, 0, textureProperties.width, textureProperties.height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+			if (!pixels.empty()) {
+				for (int i = 0; i < textureProperties.width * textureProperties.height * 4; i++)
+					if (pixels[i] != '\0') cout << "p: " << pixels[i];
+				cout << endl;
+			}
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glDeleteFramebuffers(1, &fbo);
+		}*/
+
+
+
+
+
 
 /*void drawTexture(int xPos, int yPos, TextureNames textureName) {
 	TextureProperties textureProperties;
@@ -229,3 +236,368 @@ void drawScaledTexture(
 	cout << "processing: " << clock() - start << endl; //13 миллисекунд
 	SOIL_free_image_data(data);
 }*/
+
+
+
+
+
+
+//void __drawBorder() {
+/*//мусор
+//glClearColor(0, 1, 0, 1);
+		/*glColor4f(1, 0, 0, 1);
+		glClearColor(0, 1, 0, 0);
+		glEnable(GL_BLEND);*/
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+		//glBlendFunc(GL_SRC_ALPHA, GL_DST_COLOR);
+		//glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA);
+		//glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
+		//glBlendFunc(GL_ONE, GL_ZERO); //+ glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND); цвет очистки со альфой 255
+		//glBlendFunc(GL_ZERO, GL_ONE); //цвет очистки со 100% альфой
+		//glBlendFunc(GL_ONE, GL_ONE);
+		//glBlendFunc(GL_ONE, GL_ALPHA);
+		//glBlendFuncSeparate(GL_DST_COLOR, GL_SRC_COLOR, GL_ONE, GL_ONE);
+		/*glBlendColor(0, 0, 1, 1);
+		//glBlendFunc(GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_ALPHA);
+		glBlendFunc(GL_CONSTANT_COLOR, GL_ZERO);
+		//glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+		//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);*/
+
+		//glBlendColor(0, 1, 1, 1); //пропадает прозрачность работает но не заливает тёмные места. остаётся "тень"
+		//glBlendFunc(GL_CONSTANT_COLOR, GL_CONSTANT_COLOR);
+		//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+
+		//не работает
+		/*glPixelTransferi(GL_MAP_COLOR, 1);//использоваь карту
+		float map[3] = { 1, 0.5, 0 };
+		glPixelMapfv(GL_PIXEL_MAP_R_TO_R, 1, &map[1]);
+		glPixelMapfv(GL_PIXEL_MAP_G_TO_G, 1, &map[2]);
+		glPixelMapfv(GL_PIXEL_MAP_B_TO_B, 1, &map[3]);*/
+
+		//glColor4f(0, 0, 0, 1);//закрашивает текстуру в чёрный
+
+
+		//glClearColor(0, 0, 0, 0);
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);*/
+
+
+	//int xPos, yPos, ID, _width, _height;
+
+	/*//мусор
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glEnable(GL_STENCIL_TEST);
+	glClearStencil(0);
+	glStencilMask(1);*/
+
+	/*int _borderSize = 10;
+
+	glAlphaFunc(GL_GEQUAL, 0.01); //рисуем только пиксель с альфой меньше 0.01
+	glEnable(GL_ALPHA_TEST);
+
+	glEnable(GL_STENCIL_TEST);
+
+	//рисуем только в этой области
+	//что делать если не тест не пройдер; тест трафарета пройден, но тест глубины - нет; и тест трафарета и глубины - пройден
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	//функция сравнения; подставляемое значение?; идентификатор маски?
+	glStencilFunc(GL_ALWAYS, 1, 255); //сложно непонятно https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glStencilFunc.xml
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE); //не рисуем в окно, но рисуем в трафарет?
+	glColor4f(0, 0, 0, 1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, ID);
+
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _width + _borderSize * 2, yPos);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _width + _borderSize * 2, yPos + _height + _borderSize * 2);
+	glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height + _borderSize * 2);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	//не рисуем в этой области
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_NEVER, 2, 255);
+
+	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	//glStencilFunc(GL_ALWAYS, 1, 255);
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+	glColor4f(0, 0, 0, 1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, ID);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(xPos + _borderSize, yPos + _borderSize);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _borderSize + _width, yPos + _borderSize);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _borderSize + _width, yPos + _borderSize + _height);
+	glTexCoord2i(0, 1); glVertex2i(xPos + _borderSize, yPos + _borderSize + _height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	//объект для отображения
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_EQUAL, 1, 255);
+
+	glColor4f(0.2, 0.5, 1, 1);
+	glBegin(GL_QUADS);
+	glVertex2i(xPos, yPos);
+	glVertex2i(xPos + _width + _borderSize * 2, yPos);
+	glVertex2i(xPos + _width + _borderSize * 2, yPos + _height + _borderSize * 2);
+	glVertex2i(xPos, yPos + _height + _borderSize * 2);
+	glEnd();
+
+	glDisable(GL_STENCIL_TEST);*/
+
+
+
+
+
+
+
+	/*
+	//шикардос. идеально
+	glAlphaFunc(GL_GEQUAL, 0.01); //рисуем только пиксель с альфой меньше 0.01
+	glEnable(GL_ALPHA_TEST);
+
+	glEnable(GL_STENCIL_TEST);
+
+	//рисуем только в этой области
+	//что делать если не тест не пройдер; тест трафарета пройден, но тест глубины - нет; и тест трафарета и глубины - пройден
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	//функция сравнения; подставляемое значение?; идентификатор маски?
+	glStencilFunc(GL_ALWAYS, 1, 255); //сложно непонятно https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glStencilFunc.xml
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE); //не рисуем в окно, но рисуем в трафарет?
+	glColor4f(0, 0, 0, 1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 1); glVertex2i(xPos, yPos);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos + _height);
+	glTexCoord2i(0, 0); glVertex2i(xPos, yPos + _height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	//не рисуем в этой области
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_NEVER, 2, 255);
+
+	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	//glStencilFunc(GL_ALWAYS, 1, 255);
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+	glColor4f(0, 0, 0, 1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height);
+	glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	//объект для отображения
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_EQUAL, 1, 255);
+
+	glColor4f(0.2, 0.5, 1, 1);
+	glBegin(GL_QUADS);
+	glVertex2i(xPos, yPos);
+	glVertex2i(xPos + _width, yPos);
+	glVertex2i(xPos + _width, yPos + _height);
+	glVertex2i(xPos, yPos + _height);
+	glEnd();
+
+	glDisable(GL_STENCIL_TEST);*/
+
+	//работает ещё лучше.текстура видна только внутри пикселей первой ТЕКСТУРЫ с пороговой альфой, которая устанавливается. сама первая текстура невидимая
+	/*glAlphaFunc(GL_GEQUAL, 0.01); //рисуем только пиксель с альфой меньше 0.01
+	glEnable(GL_ALPHA_TEST);
+
+	glEnable(GL_STENCIL_TEST);
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilFunc(GL_ALWAYS, 1, 255);
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE); //не рисуем в окно, но рисуем в трафарет?
+	glColor4f(0, 0, 0, 1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(xPos, yPos + 50);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos + 50);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height + 50);
+	glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height + 50);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_EQUAL, 1, 255);
+
+	glColor4f(1, 1, 1, 1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height);
+	glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+
+	glDisable(GL_STENCIL_TEST);*/
+
+	//замечательно работает. текстура видна только внутри первой фигуры, сама фигура невидимая
+	/*glEnable(GL_STENCIL_TEST);
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	//glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilFunc(GL_ALWAYS, 1, 255);
+
+	//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	glColor4f(0, 0, 0, 0);
+	glBegin(GL_POLYGON);
+	glVertex2f(30, 500);
+	glVertex2f(0, 0);
+	glVertex2f(60, 0);
+	glEnd();
+	//glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	//glStencilFunc(GL_EQUAL, 1, 0xFF); //0xFF = 255
+	glStencilFunc(GL_EQUAL, 1, 255);
+
+	glColor4f(1, 1, 1, 1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height);
+	glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+
+	glDisable(GL_STENCIL_TEST);*/
+
+	/*glClearStencil(0);
+	glClear(GL_STENCIL_BUFFER_BIT);
+
+	//glColorMask(GL_FALSE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	glEnable(GL_STENCIL_TEST);
+	//glStencilFunc(GL_ALWAYS, 1, 1);
+	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilFunc(GL_EQUAL, 1, 1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+
+	//glUseProgram(program[PROGRAM_POINT].id);
+
+	//glColor3f(0.0f, 1.0f, 0.0f);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height);
+	glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glStencilFunc(GL_NEVER, 0, 1);
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+
+	//glStencilFunc(GL_EQUAL, 1, 1);
+	//glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+	//glBindTexture(GL_TEXTURE_2D, texture);
+	//glUseProgram(program[PROGRAM_POINT].id);
+	//glColor3f(0.0f, 0.0f, 1.0f);
+	glBegin(GL_POLYGON);
+	glVertex2f(30, 100);
+	glVertex2f(0, 0);
+	glVertex2f(60, 0);
+	glEnd();
+	glDisable(GL_STENCIL_TEST);*/
+
+	//работает
+	/*glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_ALWAYS, 2, 1);
+	glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glBegin(GL_POLYGON);
+	glVertex2f(60, 60);
+	glVertex2f(20, 60);
+	glVertex2f(20, 20);
+	glVertex2f(60, 20);
+	glEnd();
+
+	glStencilFunc(GL_NEVER, 1, 1);
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+	glColor3f(0.0f, 1.0f, 0.0f);
+	glBegin(GL_POLYGON);
+	glVertex2f(30, 80);
+	glVertex2f(10, 10);
+	glVertex2f(50, 10);
+	glEnd();
+
+	glStencilFunc(GL_EQUAL, 2, 1);
+	//glStencilFunc(GL_EQUAL, 1, 1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glBegin(GL_POLYGON);
+	glVertex2f(30, 100);
+	glVertex2f(0, 0);
+	glVertex2f(60, 0);
+	glEnd();
+	glDisable(GL_STENCIL_TEST);*/
+
+
+	/*glEnable(GL_STENCIL_TEST);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+
+	glStencilFunc(GL_NEVER, 1, 1);
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+	glColor3f(0.0f, 1.0f, 0.0f);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
+	glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos);
+	glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height);
+	glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+
+	glEnable(GL_TEXTURE_2D);
+
+	glStencilFunc(GL_EQUAL, 2, 1);
+	//glStencilFunc(GL_EQUAL, 1, 1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glBegin(GL_POLYGON);
+	glVertex2f(30, 100);
+	glVertex2f(0, 0);
+	glVertex2f(60, 0);
+	glEnd();
+	glDisable(GL_STENCIL_TEST);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_STENCIL_TEST);*/
+
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+//}

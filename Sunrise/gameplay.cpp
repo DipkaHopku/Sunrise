@@ -21,6 +21,7 @@ void gameplayProcessing() {
 
 	case ApplicationState::MAIN_MENU :
 		drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
+		//drawScaledTexture(0, 0, TextureName::WTF_CAT, TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1);
 		break;
 
 	case ApplicationState::BATTLE :
@@ -47,6 +48,11 @@ void gameplayProcessing() {
 	}
 
 	UserInterface::Instance().drawUserInterface();
+
+	/*double cursor_x, cursor_y;
+	glfwGetCursorPos(window, &cursor_x, &cursor_y);
+
+	UserInterface::Instance().triggerActiveUIItemOnClickCallbackAtPoint(cursor_x, cursor_y);*/
 
 	//debug
 	//ControlField::Instance().__drawControlField();

@@ -75,6 +75,7 @@ public:
 
 const map<const LabelType, const LabelProperties> labelsData = {
 	{LabelType::TITLE, LabelProperties(		"Sunrise",		FontName::TITLE)},
+	{LabelType::OPTIONS, LabelProperties(	"Options",		FontName::SIMPLE_TEXT)},
 	{LabelType::FULLSCREEN, LabelProperties("Fullscreen:",	FontName::SIMPLE_TEXT)}
 };
 
@@ -107,9 +108,9 @@ UserInterface& UserInterface::Instance() {
 
 void UserInterface::setDisplaySize(int displayWidth, int displayHeight) {
 	if (_controlField == nullptr) {
-		_controlField = new ActiveUIItem**[displayWidth];
+		_controlField = new ActiveGraphicItem**[displayWidth];
 		for (int x = 0; x < displayWidth; x++) {
-			_controlField[x] = new ActiveUIItem*[displayHeight];
+			_controlField[x] = new ActiveGraphicItem*[displayHeight];
 		}
 		_displayWidth = displayWidth;
 		_displayHeight = displayHeight;
@@ -117,8 +118,14 @@ void UserInterface::setDisplaySize(int displayWidth, int displayHeight) {
 }
 
 void UserInterface::setWindowSize(int windowWidth, int windowHeight) {
+	//cout << "windowSize: " << windowWidth << " - " << windowHeight << endl;
 	_windowWidth = windowWidth;
 	_windowHeight = windowHeight;
+
+	//после изменения размеров окна курсор поменяет свою позицию внутри окна
+	setCursorPos(-1, -1);
+
+	clearControlField();
 
 	updateContainerProperties();
 }
@@ -128,7 +135,8 @@ void UserInterface::getWindowSize(int* width, int* height) const {
 	*height = _windowHeight;
 }
 
-void UserInterface::setActiveUIItemControlField(int xPos, int width, int yPos, int height, ActiveUIItem* activeUIItem) {
+//TODO сюда может попадать текстура не только кнопки, но сложной фигуры. надо изменить аргументы
+void UserInterface::setActiveGraphicItemControlField(int xPos, int width, int yPos, int height, ActiveGraphicItem* activeUIItem) {
 	//костыль изза отсутсвия появления скрола при размерах контейнера больше размеров окна
 	//работает замечательно. пиксель в пиксель
 	for (int x = xPos; (x < xPos + width) && (x < _windowWidth); x++) {
@@ -143,11 +151,75 @@ void UserInterface::setActiveUIItemControlField(int xPos, int width, int yPos, i
 	}*/
 }
 
-void UserInterface::triggerActiveUIItemOnClickCallbackAtPoint(int xPos, int yPos) {
-	ActiveUIItem* activeUIItem = _controlField[xPos][yPos];
-	if (activeUIItem != nullptr) {
-		activeUIItem->onClick();
+void UserInterface::triggerActiveGraphicItemOnClickCallbackAtPoint(int xPos, int yPos) {
+	ActiveGraphicItem* activeGraphicItem = _controlField[xPos][yPos];
+	if (activeGraphicItem != nullptr) {
+		activeGraphicItem->onClick();
 	}
+}
+
+/*bool UserInterface::triggeActiveUIItemOnClickCallbackAtPoint(int xPos, int yPos) {
+
+}*/
+
+void UserInterface::setCursorPos(int xCursorPos, int yCursorPos) {
+	//cout << xCursorPos << " - " << yCursorPos << endl;
+	//над каким объектом до этого находился курсор
+	ActiveGraphicItem* _prevActiveGraphicItem = nullptr;
+	if (_xCursorPos > -1 && _yCursorPos > -1) {
+		_prevActiveGraphicItem = _controlField[_xCursorPos][_yCursorPos];
+	}
+
+	if (xCursorPos > -1 && yCursorPos > -1) { //курсор в пределах экрана
+		//получаем объект над которым сейчас находится курсор
+		ActiveGraphicItem* _activeGrapicItem = _controlField[xCursorPos][yCursorPos];
+
+		if (_activeGrapicItem != _prevActiveGraphicItem) {  //курсор сошёл с того объекта, над которым до этого находился
+			//cout << "change: ac: " << _activeGrapicItem << " prev: " << _prevActiveGraphicItem  << endl;
+			//cout << "change: prev: " << _controlField[_xCursorPos][_yCursorPos] << endl;
+			if (_prevActiveGraphicItem != nullptr) {//если до этого находились над активным объектом
+				_prevActiveGraphicItem->onMouseOver(false);
+			} //иначе ничего делать не надо
+
+			if (_activeGrapicItem != nullptr) {
+				_activeGrapicItem->onMouseOver(true);
+			}
+		} //не сошёл с того объекта, над которым до этого был
+	} else { //курсор покинул экран
+		if (_prevActiveGraphicItem != nullptr) {//если до этого находились над активным объектом
+			_prevActiveGraphicItem->onMouseOver(false);
+		} //иначе ничего делать не надо
+	}
+
+	_xCursorPos = xCursorPos;
+	_yCursorPos = yCursorPos;
+	
+	/*if (_prevActiveGraphicItem != nullptr) {
+		if (_xCursorPos > -1 && _yCursorPos > -1) { //курсор в пределах экрана
+			ActiveGraphicItem* _activeGrapicItem = _controlField[_xCursorPos][_yCursorPos];
+			if (_activeGrapicItem != _prevActiveGraphicItem) { //курсор над другим объектов \ над пустотой
+				_prevActiveGraphicItem->onMouseOver(false);
+				if (_activeGrapicItem != nullptr) {
+					_activeGrapicItem->onMouseOver(true);
+				}
+			} //если курсор над тем же объектом, то делать ничего не надо
+		} else { //курсор вышел за пределы экрана
+			_prevActiveGraphicItem->onMouseOver(false);
+		}
+	} else { //до этого курсор находился над пустотой
+		if (_xCursorPos > -1 && _yCursorPos > -1) { //курсор в пределах экрана
+			ActiveGraphicItem* _activeGrapicItem = _controlField[_xCursorPos][_yCursorPos];
+			if (_activeGrapicItem != nullptr) {
+				_activeGrapicItem->onMouseOver(true);
+			}
+		}
+	}*/
+
+	/*if (xCursorPos > -1 && yCursorPos > -1 && _controlField[xCursorPos][yCursorPos] != nullptr) {
+		_controlField[xCursorPos][yCursorPos]->onMouseOver(true);
+	} else {
+		_controlField[xCursorPos][yCursorPos]->onMouseOver(false);
+	}*/
 }
 
 void UserInterface::clearControlField() {
@@ -221,6 +293,8 @@ void UserInterface::drawUserInterface() const {
 	}
 }
 
+
+
 //---------------------------------------------------------------------------------------------
 //class UIItem definition
 
@@ -234,6 +308,8 @@ void UIItem::setPosition(int xPos, int yPos) {
 	_xPos = xPos;
 	_yPos = yPos;
 }
+
+
 
 //---------------------------------------------------------------------------------------------
 //class UIItemsContainer definition
@@ -440,7 +516,7 @@ public:
 
 //---------------------------------------------------------------------------------------------
 //class Button definition
-class Button : public ActiveUIItem {
+class Button : public UIItem, public ActiveGraphicItem {
 private:
 	//унаследованные:
 	//int _xPos = 0, _yPos = 0;
@@ -456,22 +532,110 @@ private:
 	//int** _charsLocation;
 
 	void drawUIItem() const {
-		UserInterface::Instance().setActiveUIItemControlField(_xPos, _width, _yPos, _height, (ActiveUIItem*)this);
+		UserInterface::Instance().setActiveGraphicItemControlField(_xPos, _width, _yPos, _height, (ActiveGraphicItem*)this);
 
-		glColor4fv(BUTTON_COLOR_RGB);
+		/*glColor4fv(BUTTON_COLOR_RGB);
 		glBegin(GL_QUADS);
 		glVertex2i(_xPos, _yPos); //самый левый верхний пиксель квардрата будет _xPos, _yPos, а самый левый верхний пиксель окна в системе координат опенгл это (0,0)
 		glVertex2i(_xPos + _width, _yPos);
 		glVertex2i(_xPos + _width, _yPos + _height); //самый правый нижний пиксель квадрата будет _xPos + _width - 1, _yPos + _height - 1, а самый правый нижний пиксель окна в системе координат опенгл это (window width -1, window height -1)
 		glVertex2i(_xPos, _yPos + _height);
-		glEnd();
+		glEnd();*/
 
-		drawString(
-			_xPos + _paddingSize,
-			_yPos + _paddingSize,
-			_fontName,
-			_title,
-			BUTTON_FONT_COLOR_RGB);
+		if (_mouseOver) {
+			glEnable(GL_ALPHA_TEST);
+			glAlphaFunc(GL_NOTEQUAL, 0); //рисуются пиксели с альфой не равной 0
+			//glAlphaFunc(GL_EQUAL, 1);
+
+			glEnable(GL_STENCIL_TEST);
+
+			//не рисуем в этой области
+			// что делать если не тест не пройдер; тест трафарета пройден, но тест глубины - нет; и тест трафарета и глубины - пройден
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			glStencilFunc(GL_ALWAYS, 1, 255);
+
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+			//float emptyColor[4] = { 0, 0, 0, 1 };
+			drawString(
+				_xPos + _paddingSize,
+				_yPos + _paddingSize,
+				_fontName,
+				_title,
+				BUTTON_FONT_COLOR_RGB);
+			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+			glDisable(GL_ALPHA_TEST);
+			
+			////рисую текст с инвертированной альфой, чтобы были края с плавной альфой
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			glStencilFunc(GL_ALWAYS, 1, 255);
+
+			//glAlphaFunc(GL_LESS, 0.2);
+
+			glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_CONSTANT_ALPHA); //инвертирую альфу и рисую. цвет не blendColor?
+			glBlendColor(1, 1, 1, 1);
+			//glBlendEquation(GL_FUNC_ADD);
+
+			drawString(
+				_xPos + _paddingSize,
+				_yPos + _paddingSize,
+				_fontName,
+				_title,
+				BUTTON_FONT_COLOR_RGB);
+
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			//glDisable(GL_ALPHA_TEST);
+
+			//объект для отображения
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			glStencilFunc(GL_NOTEQUAL, 1, 255);
+
+			//glColor4f(1, 1, 1, 1);
+			glColor4fv(BUTTON_FONT_COLOR_RGB);
+			glBegin(GL_QUADS);
+			glVertex2i(_xPos, _yPos);
+			glVertex2i(_xPos + _width, _yPos);
+			glVertex2i(_xPos + _width, _yPos + _height);
+			glVertex2i(_xPos, _yPos + _height);
+			glEnd();
+
+			glDisable(GL_STENCIL_TEST);
+
+			glDisable(GL_ALPHA_TEST);
+		} else {
+			//рисуем статичное оформление
+			//glColor4f(1, 1, 1, 1);
+			glColor4fv(BUTTON_FONT_COLOR_RGB);
+
+			glEnable(GL_LINE_SMOOTH);
+			glEnable(GL_POINT_SMOOTH);
+			int _lineWidth = 4; //чётное
+			int _pointSize = _lineWidth;
+			_lineWidth++; //50% прозрачности полоса в 1 пиксель сверху и снизу
+			glLineWidth(_lineWidth);
+			glPointSize(_pointSize);
+
+			glBegin(GL_LINES);
+			glVertex2i(_xPos + _pointSize - _lineWidth / 2, _yPos + _height - _lineWidth / 2 - 2);
+			glVertex2i(_xPos - _pointSize + _lineWidth / 2 + _width, _yPos + _height - _lineWidth / 2 - 2);
+			glEnd();
+
+			glBegin(GL_POINTS);
+			glVertex2i(_xPos + _lineWidth - _lineWidth / 2, _yPos + _height - _lineWidth / 2 - 2);
+			glVertex2i(_xPos - _lineWidth + _lineWidth / 2 + _width, _yPos + _height - _lineWidth / 2 - 2);
+			glEnd();
+
+			//glEnable(GL_COLOR_LOGIC_OP);
+			//glLogicOp(GL_NOOP); //делает невидимой?
+			//glLogicOp(GL_COPY);//заливочка цветом glColor
+
+			drawString(
+				_xPos + _paddingSize,
+				_yPos + _paddingSize,
+				_fontName,
+				_title,
+				BUTTON_FONT_COLOR_RGB);
+		}
 	}
 
 public:
@@ -532,7 +696,15 @@ public:
 	}*/
 
 	void onClick() const {
+		/*cout << "GraphicItem::_xPos : " << GraphicItem::_xPos << endl; //при виртуальном наследовании всё одинаковое
+		cout << "ActiveGraphicItem::_xPos : " << ActiveGraphicItem::_xPos << endl;
+		cout << "UIItem::_xPos : " << UIItem::_xPos << endl;
+		cout << "_xPos : " << _xPos << endl;*/
 		_onClickCallback();
+	}
+
+	void onMouseOver(bool mouseOver) {
+		_mouseOver = mouseOver;
 	}
 
 	//debug
@@ -635,11 +807,29 @@ void callback_mouseButton(GLFWwindow *window, const int button, const int action
 		double cursor_x, cursor_y;
 		glfwGetCursorPos(window, &cursor_x, &cursor_y);
 
-		UserInterface::Instance().triggerActiveUIItemOnClickCallbackAtPoint(cursor_x, cursor_y);
+		UserInterface::Instance().triggerActiveGraphicItemOnClickCallbackAtPoint(cursor_x, cursor_y);
 		//cout << "cursor_x: " << cursor_x << "  cursor_y: " << cursor_y << endl;
 	}
 }
 
+void callback_cursorEnter(GLFWwindow* window, int entered) {
+	if (!entered) { // The cursor left the content area of the window
+		UserInterface::Instance().setCursorPos(-1, -1);
+	}
+}
+
+void callback_cursorPos(GLFWwindow* window, double xPos, double yPos) {
+	//cout << " - cursor_x: " << xPos << "  cursor_y: " << yPos << endl;
+	UserInterface::Instance().setCursorPos(xPos, yPos);
+}
+
+
+/*void callback_char(GLFWwindow* window, unsigned int codepoint) {
+
+}*/
+
+/*void callback_scroll(GLFWwindow* window, double xoffset, double yoffset) {
+}*/
 
 
 /*//debug
