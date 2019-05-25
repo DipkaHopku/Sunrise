@@ -104,25 +104,27 @@ class UIItemsContainer;
 //---------------------------------------------------------------------------------------------
 //class ApplicationStateController declaration
 
-static class ApplicationStateController {
+static class ApplicationStateChangingController { //ApplicationStateCurrentSettingController
 	friend void gameplayProcessing();
-
+	
 private:
-	static void setApplicationState(ApplicationState);
-
-	static ApplicationState getApplicationState();
+	static void setApplicationState(ApplicationState);	
 };
 
 
 
 //---------------------------------------------------------------------------------------------
-//class ApplicationStateNextController declaration
+//class ApplicationStatePlanningController declaration
 
-static class ApplicationStateNextController {
+static class ApplicationStatePlanningController {
 	friend void gameplayProcessing();
 	friend void callback_optionsButton_onClick();
+	friend void callback_backButton_onClick();
+	friend void callback_key(GLFWwindow*, const int, const int, const int, const int);
 
 private:
+	static ApplicationState getApplicationState();
+
 	static void setApplicationStateNext(ApplicationState);
 
 	static ApplicationState getApplicationStateNext();
@@ -134,8 +136,8 @@ private:
 //class UserInterface declaration
 
 class UserInterface {
-	friend class ApplicationStateController;
-	friend class ApplicationStateNextController;
+	friend class ApplicationStateChangingController;
+	friend class ApplicationStatePlanningController;
 
 private:
 	ApplicationState _applicationState = ApplicationState::APPLICATION_LAUNCH;
@@ -164,6 +166,16 @@ private:
 	UserInterface& operator=(const UserInterface&) = delete;
 
 	void updateContainerProperties();
+
+	//bool setApplicationState(ApplicationState);
+	void setApplicationState(ApplicationState);
+
+	ApplicationState getApplicationState() const;
+
+	//возвращает true, если установить следующее состояние удалось, и false, если не удалось
+	bool setApplicationStateNext(ApplicationState);
+
+	ApplicationState getApplicationStateNext() const;
 public:
 	static UserInterface& Instance();	
 
@@ -204,15 +216,7 @@ public:
 
 	void drawUserInterface() const;
 
-	//bool setApplicationState(ApplicationState);
-	void setApplicationState(ApplicationState);
-
-	ApplicationState getApplicationState() const;
-
-	//возвращает true, если установить следующее состояние удалось, и false, если не удалось
-	bool setApplicationStateNext(ApplicationState);
-
-	ApplicationState getApplicationStateNext() const;
+	void createDialogWindow() const;
 };
 
 
@@ -303,6 +307,7 @@ protected:
 
 public:
 	virtual void onClick() const = 0;
+	//virtual void onClick() = 0;
 	//virtual void onMouseOver(bool) = 0;
 	virtual void onMouseOver(bool);
 };

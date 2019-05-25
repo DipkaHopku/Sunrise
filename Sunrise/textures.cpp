@@ -161,7 +161,23 @@ void drawScaledTexture(
 	}
 }
 
+/*void drawQuadRotated45DegreesWithSameAngles(int xPos, int yPos, int width) {
+	glVertex2i(_xPos + _stencilLineWindth - 4, _yPos + _stencilLineWindth + 4); //<
+	glVertex2i(_xPos + _stencilLineWindth + 4, _yPos + _stencilLineWindth - 4); //^
+	glVertex2i(_xPos - _stencilLineWindth + _width + 4, _yPos - _stencilLineWindth + _height - 4); //>
 
+	glVertex2i(_xPos + _stencilLineWindth - 4, _yPos + _stencilLineWindth + 4); //<
+	glVertex2i(_xPos - _stencilLineWindth + _width - 4, _yPos - _stencilLineWindth + _height + 4); //V
+	glVertex2i(_xPos - _stencilLineWindth + _width + 4, _yPos - _stencilLineWindth + _height - 4); //>
+
+	glVertex2i(_xPos + _stencilLineWindth - 4 + 1, _yPos + _stencilLineWindth + 4); //<
+	glVertex2i(_xPos + _stencilLineWindth + 4 + 1, _yPos + _stencilLineWindth - 4); //^
+	glVertex2i(_xPos - _stencilLineWindth + _width + 4 + 1, _yPos - _stencilLineWindth + _height - 4); //>
+
+	glVertex2i(_xPos + _stencilLineWindth - 4 + 1, _yPos + _stencilLineWindth + 4); //<
+	glVertex2i(_xPos - _stencilLineWindth + _width - 4 + 1, _yPos - _stencilLineWindth + _height + 4); //V
+	glVertex2i(_xPos - _stencilLineWindth + _width + 4 + 1, _yPos - _stencilLineWindth + _height - 4); //>
+}*/
 
 
 

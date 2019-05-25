@@ -10,10 +10,10 @@ void gameplayProcessing() {
 	UserInterface::Instance().clearControlField();
 
 	//получаем то каким должнон было быть следующее состояние
-	ApplicationState _applicationStateNext = ApplicationStateNextController::getApplicationStateNext();
+	ApplicationState _applicationStateNext = ApplicationStatePlanningController::getApplicationStateNext();
 	//следующее состояние наступило - устанавливаем его текущим
-	ApplicationStateController::setApplicationState(_applicationStateNext);
-	ApplicationState _applicationState = ApplicationStateNextController::getApplicationStateNext();
+	ApplicationStateChangingController::setApplicationState(_applicationStateNext);
+	ApplicationState _applicationState = ApplicationStatePlanningController::getApplicationStateNext();
 
 	int _windowWidth, _windowHeight;
 	UserInterface::Instance().getWindowSize(&_windowWidth, &_windowHeight);
@@ -27,7 +27,7 @@ void gameplayProcessing() {
 		//createMainMenu();
 
 		//applicationState = ApplicationState::MAIN_MENU;
-		ApplicationStateNextController::setApplicationStateNext(ApplicationState::MAIN_MENU);
+		ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::MAIN_MENU);
 		//applicationStateNext = ApplicationState::MAIN_MENU;
 		break;
 

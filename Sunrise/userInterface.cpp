@@ -83,7 +83,7 @@ public:
 void callback_fullscreenCheckBox_onClick();
 
 const map<const CheckBoxType, const CheckBoxProperties> checkBoxesData = {
-	{CheckBoxType::FULLSCREEN, CheckBoxProperties("fullscreen",	callback_startButton_onClick)}
+	{CheckBoxType::FULLSCREEN, CheckBoxProperties("fullscreen",	callback_fullscreenCheckBox_onClick)}
 };
 
 
@@ -124,25 +124,29 @@ const map<const LabelType, const LabelProperties> labelsData = {
 //---------------------------------------------------------------------------------------------
 //class ApplicationStateController definition
 
-void ApplicationStateController::setApplicationState(ApplicationState applicationState) {
+void ApplicationStateChangingController::setApplicationState(ApplicationState applicationState) {
 	UserInterface::Instance().setApplicationState(applicationState);
 }
 
-ApplicationState ApplicationStateController::getApplicationState() {
+/*ApplicationState ApplicationStateChangingController::getApplicationState() {
 	return UserInterface::Instance()._applicationState;
-}
+}*/
 
 
 
 //---------------------------------------------------------------------------------------------
 //class ApplicationStateNextController definition
 
-void ApplicationStateNextController::setApplicationStateNext(ApplicationState ApplicationStateNext) {
+void ApplicationStatePlanningController::setApplicationStateNext(ApplicationState ApplicationStateNext) {
 	UserInterface::Instance().setApplicationStateNext(ApplicationStateNext);
 }
 
-ApplicationState ApplicationStateNextController::getApplicationStateNext() {
+ApplicationState ApplicationStatePlanningController::getApplicationStateNext() {
 	return UserInterface::Instance()._applicationStateNext;
+}
+
+ApplicationState ApplicationStatePlanningController::getApplicationState() {
+	return UserInterface::Instance()._applicationState;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -290,6 +294,8 @@ void UserInterface::setUIItemsContainer(UIItemsContainer* UIItemsContainer) {
 	//_UIItemContainer = new UIItemsContainer(*uIItemsContainer); //TODO
 
 	updateContainerProperties();
+
+	setCursorPos(-1, -1);//чтоб активные элементы подсвечивались после первого движения, а не только после захода курсора на следующий активный элемент
 }
 
 void UserInterface::updateContainerProperties() { //существует, потому что рассчитывать параметры контейнеров надо не только при добавлении элементов в контейнер, но и при изменении размеров окна //как минимум это задел на появление скрола при малых и недостаточных размерах окна
@@ -354,18 +360,27 @@ ApplicationState UserInterface::getApplicationState() const {
 }
 
 bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNext) {
+	//запрос на то чтобы остаться там где и был - это ок
 	if (applicationStateNext == _applicationState) {
 		_applicationStateNext = applicationStateNext;
 		return true;
 	}
+	//после запуска открывается главное меню
 	else if (applicationStateNext == ApplicationState::MAIN_MENU && _applicationState == ApplicationState::APPLICATION_LAUNCH) { //проверка на то что до этого не нажимались другие кнопки
 		_applicationStateNext = applicationStateNext;
 		createMainMenu();
 		return true;
 	}
+	//из главного меню можно перейти в опции
 	else if (applicationStateNext == ApplicationState::OPTIONS && _applicationState == ApplicationState::MAIN_MENU) { //проверка на то что до этого не нажимались другие кнопки
 		_applicationStateNext = applicationStateNext; //= ApplicationState::OPTIONS
 		createOptionsMenu();
+		return true;
+	}
+	//... и обратно
+	else if (applicationStateNext == ApplicationState::MAIN_MENU && _applicationState == ApplicationState::OPTIONS) { //проверка на то что до этого не нажимались другие кнопки
+		_applicationStateNext = applicationStateNext; //= ApplicationState::OPTIONS
+		createMainMenu();
 		return true;
 	}
 	return false;
@@ -373,6 +388,10 @@ bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNex
 
 ApplicationState UserInterface::getApplicationStateNext() const {
 	return _applicationStateNext;
+}
+
+void UserInterface::createDialogWindow() const {
+	//продолжаем рисовать состояние из которого вызывается диалог, но не даём его использовать
 }
 
 
@@ -788,20 +807,22 @@ public:
 		delete[] _charsLocation;*/
 	}
 
-	/*void getUIItemSizes(int* width, int* height, int* marginSize) const {
-		if (width != nullptr) *width = _width;
-		if (height != nullptr) *height = _height;
-		//*paddingSize = _paddingSize;
-		if (marginSize != nullptr) *marginSize = _marginSize;
-	}*/
-
 	void onClick() const {
-		/*cout << "GraphicItem::_xPos : " << GraphicItem::_xPos << endl; //при виртуальном наследовании всё одинаковое
-		cout << "ActiveGraphicItem::_xPos : " << ActiveGraphicItem::_xPos << endl;
-		cout << "UIItem::_xPos : " << UIItem::_xPos << endl;
-		cout << "_xPos : " << _xPos << endl;*/
 		_onClickCallback();
 	}
+
+
+	/*void onClick() {
+		_onClickCallback();
+	}*/
+
+	/*void onClick() const {
+		//cout << "GraphicItem::_xPos : " << GraphicItem::_xPos << endl; //при виртуальном наследовании всё одинаковое
+		//cout << "ActiveGraphicItem::_xPos : " << ActiveGraphicItem::_xPos << endl;
+		//cout << "UIItem::_xPos : " << UIItem::_xPos << endl;
+		//cout << "_xPos : " << _xPos << endl;
+		_onClickCallback();
+	}*/
 
 	/*void onMouseOver(bool mouseOver) { //реализован как виртуальный класса родителя
 		_mouseOver = mouseOver;
@@ -826,58 +847,191 @@ private:
 	//void(*_callback)();
 
 	string _valueName;
-	bool _condition = false;
+	//bool _condition = false;
+	bool _condition = true;
 
 	void drawUIItem() const {
 		UserInterface::Instance().setActiveGraphicItemControlField(_xPos, _width, _yPos, _height, (ActiveGraphicItem*)this);
 
-		if (_mouseOver) {
+		//int _lineWidth = _height / 7 + (1 - (_height / 7) % 2); //_lineWidth всегда нечётное
+		//if (_lineWidth > 6) _lineWidth = 6; //у линей есть предел ширины в 10 пикселей
+		//int _stencilLineWindth = _lineWidth * 1.5 + 1;
 
-		}
-		else {
-			glColor4f(1, 1, 1, 1);
-			glBegin(GL_QUADS);
-			glVertex2i(_xPos, _yPos); //самый левый верхний пиксель квардрата будет _xPos, _yPos, а самый левый верхний пиксель окна в системе координат опенгл это (0,0)
-			glVertex2i(_xPos + _width, _yPos);
-			glVertex2i(_xPos + _width, _yPos + _height); //самый правый нижний пиксель квадрата будет _xPos + _width - 1, _yPos + _height - 1, а самый правый нижний пиксель окна в системе координат опенгл это (window width -1, window height -1)
-			glVertex2i(_xPos, _yPos + _height);
-			glEnd();
-
-			//рисуем статичное оформление
-			glColor4f(1, 0, 0, 0.5);
-			//glColor4fv(BUTTON_FONT_COLOR_RGB);
-			//glEnable(GL_POINT_SMOOTH);
-			int _lineWidth = 4; //чётное
-			//int _pointSize = _lineWidth;
-			_lineWidth++; //50% прозрачности полоса в 1 пиксель сверху и снизу
-			glLineWidth(_lineWidth);
-
+		int _lineWidth = 6, _stencilLineWindth = 9;
+		if (_condition) { //галочка
+			//сама галочка
+			glColor4f(0.235, 1, 0.235, 1);
 			glEnable(GL_LINE_SMOOTH);
-			glVertex2i(_xPos, _yPos); //самый левый верхний пиксель квардрата будет _xPos, _yPos, а самый левый верхний пиксель окна в системе координат опенгл это (0,0)
-			glVertex2i(_xPos + _width, _yPos);
-			glVertex2i(_xPos + _width, _yPos + _height); //самый правый нижний пиксель квадрата будет _xPos + _width - 1, _yPos + _height - 1, а самый правый нижний пиксель окна в системе координат опенгл это (window width -1, window height -1)
-			glVertex2i(_xPos, _yPos + _height);
+			glLineWidth(_lineWidth); //предел 10 пикселей
+
+			_stencilLineWindth += 2;
+			glBegin(GL_LINES);
+			glVertex2i(_xPos + _stencilLineWindth, _yPos + _stencilLineWindth);
+			glVertex2i(_xPos + _width / 2, _yPos - _stencilLineWindth + _height);
+
+			glVertex2i(_xPos + _width / 2, _yPos - _stencilLineWindth + _height);
+			glVertex2i(_xPos - _stencilLineWindth + _width, _yPos + _stencilLineWindth);
 			glEnd();
 
-			/*
-			glEnable(GL_LINE_SMOOTH);
-			glEnable(GL_POINT_SMOOTH);
-			int _lineWidth = 4; //чётное
-			int _pointSize = _lineWidth;
-			_lineWidth++; //50% прозрачности полоса в 1 пиксель сверху и снизу
-			glLineWidth(_lineWidth);
-			glPointSize(_pointSize);
-
-			glBegin(GL_LINE_LOOP);
-			glVertex2i(_xPos + _pointSize - _lineWidth / 2, _yPos + _height - _lineWidth / 2 - 2);
-			glVertex2i(_xPos - _pointSize + _lineWidth / 2 + _width, _yPos + _height - _lineWidth / 2 - 2);
-			glEnd();
-
+			glPointSize(6);
 			glBegin(GL_POINTS);
-			glVertex2i(_xPos + _lineWidth - _lineWidth / 2, _yPos + _height - _lineWidth / 2 - 2);
-			glVertex2i(_xPos - _lineWidth + _lineWidth / 2 + _width, _yPos + _height - _lineWidth / 2 - 2);
+				glVertex2i(_xPos + _width / 2, _yPos - _stencilLineWindth + _height);
+			glEnd();
+			_stencilLineWindth -= 2;
+
+			//прозрачная "обводка"
+			glEnable(GL_STENCIL_TEST);
+
+			//не рисуем в этой области
+			// что делать если не тест не пройдер; тест трафарета пройден, но тест глубины - нет; и тест трафарета и глубины - пройден
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			glStencilFunc(GL_ALWAYS, 1, 255);
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+
+			// "\"
+			glBegin(GL_QUADS);
+			glVertex2i(_xPos + _stencilLineWindth - 5,	_yPos + _stencilLineWindth + 3);			//<
+			glVertex2i(_xPos + _stencilLineWindth + 6,	_yPos + _stencilLineWindth - 4);			//^
+			glVertex2i(_xPos + _width / 2 + 7,			_yPos + _height - _stencilLineWindth - 3);	//>
+			glVertex2i(_xPos + _width / 2 - 4 ,			_yPos + _height - _stencilLineWindth + 4);	//V
+			glEnd();
+
+			// "/"
+			glBegin(GL_QUADS);
+			glVertex2i(_xPos + _width / 2 - 7,						_yPos + _height - _stencilLineWindth - 3);	//<
+			glVertex2i(_xPos + _width - (_stencilLineWindth + 6),	_yPos + _stencilLineWindth - 4);			//^
+			glVertex2i(_xPos + _width - (_stencilLineWindth - 5),	_yPos + _stencilLineWindth + 3);			//<
+			glVertex2i(_xPos + _width / 2 + 4,						_yPos + _height - _stencilLineWindth + 4);	//V
+			glEnd();
+
+			glPointSize(8);
+			glBegin(GL_POINTS);
+			glVertex2i(_xPos + _width / 2, _yPos - _stencilLineWindth + _height + 1);
+			glEnd();
+
+			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		}
+		else { //крестик
+			//сам крестик
+			glColor4f(1, 0.235, 0.235, 1);
+			glEnable(GL_LINE_SMOOTH);
+			glLineWidth(_lineWidth); //предел 10 пикселей
+
+			_stencilLineWindth += 2;
+			glBegin(GL_LINES);
+			glVertex2i(_xPos + _stencilLineWindth,			_yPos + _stencilLineWindth);
+			glVertex2i(_xPos - _stencilLineWindth+ _width,	_yPos - _stencilLineWindth + _height);
+
+			glVertex2i(_xPos + _stencilLineWindth,			_yPos - _stencilLineWindth + _height);	//left, bot
+			glVertex2i(_xPos - _stencilLineWindth + _width,	_yPos + _stencilLineWindth);			//right, top
+			glEnd();
+			_stencilLineWindth -=2;
+
+			//прозрачная "обводка"
+			glEnable(GL_STENCIL_TEST);
+		
+			//не рисуем в этой области
+			// что делать если не тест не пройдер; тест трафарета пройден, но тест глубины - нет; и тест трафарета и глубины - пройден
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			glStencilFunc(GL_ALWAYS, 1, 255);
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+			/*
+			glBegin(GL_TRIANGLES);
+
+			glVertex2i(_xPos + _stencilLineWindth - 4, _yPos + _stencilLineWindth + 4); //<
+			glVertex2i(_xPos + _stencilLineWindth + 4, _yPos + _stencilLineWindth - 4); //^
+			glVertex2i(_xPos - _stencilLineWindth + _width + 4, _yPos - _stencilLineWindth + _height - 4); //>
+
+			glVertex2i(_xPos + _stencilLineWindth - 4, _yPos + _stencilLineWindth + 4); //<
+			glVertex2i(_xPos - _stencilLineWindth + _width - 4, _yPos - _stencilLineWindth + _height + 4); //V
+			glVertex2i(_xPos - _stencilLineWindth + _width + 4, _yPos - _stencilLineWindth + _height - 4); //>
+
+			glVertex2i(_xPos + _stencilLineWindth - 4 + 1, _yPos + _stencilLineWindth + 4); //<
+			glVertex2i(_xPos + _stencilLineWindth + 4 + 1, _yPos + _stencilLineWindth - 4); //^
+			glVertex2i(_xPos - _stencilLineWindth + _width + 4 + 1, _yPos - _stencilLineWindth + _height - 4); //>
+
+			glVertex2i(_xPos + _stencilLineWindth - 4 + 1, _yPos + _stencilLineWindth + 4); //<
+			glVertex2i(_xPos - _stencilLineWindth + _width - 4 + 1, _yPos - _stencilLineWindth + _height + 4); //V
+			glVertex2i(_xPos - _stencilLineWindth + _width + 4 + 1, _yPos - _stencilLineWindth + _height - 4); //>
+			
 			glEnd();
 			*/
+			glLineWidth(1);
+
+			// "\"
+			glBegin(GL_LINE_LOOP);
+			glVertex2i(_xPos + _stencilLineWindth - 3,			_yPos + _stencilLineWindth + 4);			//<
+			glVertex2i(_xPos + _stencilLineWindth + 4,			_yPos + _stencilLineWindth - 3);			//^
+			glVertex2i(_xPos - _stencilLineWindth + _width + 3, _yPos - _stencilLineWindth + _height - 4);	//>
+			glVertex2i(_xPos - _stencilLineWindth + _width - 4, _yPos - _stencilLineWindth + _height + 3);	//V
+			glEnd();
+
+			glBegin(GL_QUADS);
+			glVertex2i(_xPos + _stencilLineWindth - 3,			_yPos + _stencilLineWindth + 4);			//<
+			glVertex2i(_xPos + _stencilLineWindth + 4,			_yPos + _stencilLineWindth - 3);			//^
+			glVertex2i(_xPos - _stencilLineWindth + _width + 3, _yPos - _stencilLineWindth + _height - 4);	//>
+			glVertex2i(_xPos - _stencilLineWindth + _width - 4, _yPos - _stencilLineWindth + _height + 3);	//V
+			glEnd();
+
+			// "/"
+			glBegin(GL_LINE_LOOP);
+			glVertex2i(_xPos + _stencilLineWindth - 3,			_yPos - _stencilLineWindth + _height - 4);	//<
+			glVertex2i(_xPos + _stencilLineWindth + 4,			_yPos - _stencilLineWindth + _height + 3);	//^
+			glVertex2i(_xPos - _stencilLineWindth + _width + 3, _yPos + _stencilLineWindth + 4);			//>
+			glVertex2i(_xPos - _stencilLineWindth + _width - 4, _yPos + _stencilLineWindth - 3);			//V
+			glEnd();
+
+			glBegin(GL_QUADS);
+			glVertex2i(_xPos + _stencilLineWindth - 3,			_yPos - _stencilLineWindth + _height - 4);	//<
+			glVertex2i(_xPos + _stencilLineWindth + 4,			_yPos - _stencilLineWindth + _height + 3);	//^
+			glVertex2i(_xPos - _stencilLineWindth + _width + 3, _yPos + _stencilLineWindth + 4);			//>
+			glVertex2i(_xPos - _stencilLineWindth + _width - 4, _yPos + _stencilLineWindth - 3);			//V
+			glEnd();
+
+			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		}
+
+		if (_mouseOver) {
+			//оформление при наведении
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			glStencilFunc(GL_NOTEQUAL, 1, 255);
+
+			glColor4fv(BUTTON_FONT_COLOR_RGB);
+			glBegin(GL_QUADS);
+			glVertex2i(_xPos, _yPos);
+			glVertex2i(_xPos + _width, _yPos);
+			glVertex2i(_xPos + _width, _yPos + _height);
+			glVertex2i(_xPos, _yPos + _height);
+			glEnd();
+
+			glDisable(GL_STENCIL_TEST);
+		}
+		else {
+			//статичное оформление (рамочка)
+			//glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			//glStencilFunc(GL_NOTEQUAL, 1, 255);
+			glDisable(GL_STENCIL_TEST);
+
+			glColor4fv(BUTTON_FONT_COLOR_RGB);
+			glLineWidth(_lineWidth);
+			_lineWidth /= 2;
+			_lineWidth++;
+			glBegin(GL_LINES);
+
+			//горизонтальная верхняя
+			glVertex2i(_xPos + _lineWidth - 2,			_yPos + _lineWidth);
+			glVertex2i(_xPos - _lineWidth + 2 + _width, _yPos + _lineWidth);
+			//вертикальная правая
+			glVertex2i(_xPos - _lineWidth + _width,		_yPos + _lineWidth - 2);
+			glVertex2i(_xPos - _lineWidth + _width,		_yPos - _lineWidth + 2 + _height);
+			//горизонтальная нижняя
+			glVertex2i(_xPos - _lineWidth + 2 + _width, _yPos - _lineWidth + _height);
+			glVertex2i(_xPos + _lineWidth - 2,			_yPos - _lineWidth + _height);
+			//вертикальная левая
+			glVertex2i(_xPos + _lineWidth,				_yPos - _lineWidth + 2 + _height);
+			glVertex2i(_xPos + _lineWidth,				_yPos + _lineWidth - 2);
+
+			glEnd();
 		}
 	}
 
@@ -894,7 +1048,8 @@ public:
 
 		int _simpleTextSize;
 		getStringProperties(FontName::SIMPLE_TEXT, "A", nullptr, &_simpleTextSize);
-		_simpleTextSize *= 1.2;
+		_simpleTextSize *= 1.25;
+		//if (_simpleTextSize > 86) _simpleTextSize = 86; //у линий есть предел ширины в 10 пикселей
 		_width = _simpleTextSize;
 		_height = _simpleTextSize;
 	}
@@ -905,6 +1060,15 @@ public:
 	void onClick() const {
 		_onClickCallback();
 	}
+
+	/*void setCondition(bool condition) {
+		_condition = condition;
+	}*/
+
+	/*void onClick() {
+		_condition = !_condition;
+		_onClickCallback();
+	}*/
 };
 
 
@@ -1007,7 +1171,8 @@ void callback_loadButton_onClick() {
 
 void callback_optionsButton_onClick() {
 	//cout << "options button is pressed" << endl;
-	UserInterface::Instance().setApplicationStateNext(ApplicationState::OPTIONS);
+	//UserInterface::Instance().setApplicationStateNext(ApplicationState::OPTIONS);
+	ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::OPTIONS);
 }
 
 void callback_exitButton_onClick() {
@@ -1016,12 +1181,22 @@ void callback_exitButton_onClick() {
 
 //options
 void callback_backButton_onClick() {
-	//cout << "options button is pressed" << endl;
 	cout << "back button is pressed" << endl;
+	//UserInterface::Instance().setApplicationStateNext(ApplicationState::MAIN_MENU);
+	ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::MAIN_MENU);
 }
 
 void callback_applyButton_onClick() {
 	cout << "apply button is pressed" << endl;
+}
+
+
+
+//---------------------------------------------------------------------------------------------
+//checkBoxes callbacks
+
+void callback_fullscreenCheckBox_onClick()
+{
 }
 
 //---------------------------------------------------------------------------------------------
@@ -1056,8 +1231,12 @@ void callback_windowSize(GLFWwindow* window, int width, int height) {
 }
 
 void callback_key(GLFWwindow *window, const int key, const int scancode, const int action, const int mods) {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+		if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::OPTIONS) {
+			callback_backButton_onClick();
+		}
+	}
+	//glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
 void callback_mouseButton(GLFWwindow *window, const int button, const int action, const int mods) {
