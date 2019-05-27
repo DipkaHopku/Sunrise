@@ -40,6 +40,8 @@ using namespace std;
 #define ICON_FILENAME				"resources/textures/sunrise.png"
 #define MAX_FPS 120
 
+//void DrawCube(GLfloat, GLfloat, GLfloat, GLfloat);
+
 int main(void) {
 	GLFWwindow* window;
 
@@ -89,9 +91,16 @@ int main(void) {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity(); //единична€ матрица. одна координатна€ сетка на весь экран или как? комментирование ничего не мен€ет вроде бы
 	glOrtho(0, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, 0, 0, -1); //положение сцены. начало кооридант - вверху слева, направление координатной сетки - вниз вправо
+
+	//glOrtho(0, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, 0, 0, 1000);
+	//glOrtho(0, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, 0, 0, -10); //чтобы рисовать объекты в диапозоне от 0 до 10
+
 	//double w2h = (DEFAULT_SCREEN_HEIGHT > 0) ? (double)DEFAULT_SCREEN_WIDTH / DEFAULT_SCREEN_HEIGHT : 1;
 	//glOrtho(0, 640 * w2h, 0, 480, -2, +2);
 	//glOrtho(0, 480 * w2h, 0, 480, -2, 2);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glClearColor(0, 0, 0, 0);
 
 	//по дефолту 1 //при 2 - 30 фпс, при 1 - 60
 	//просто устанавливает задержку, т.е. когда обработка геймпле€ зат€гиваетс€ - задержка будет почти такой же
@@ -99,11 +108,23 @@ int main(void) {
 	glfwSwapInterval(0);
 
 	glEnable(GL_SMOOTH); //а нужно ли оно мне?
-	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_DEPTH_TEST); //нужен только дл€ 3д
 	glEnable(GL_BLEND); //"смешивание" > отключает прозрачность
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_POINT_SMOOTH);//если рисовать поточечно, то кажда€ точка будет смешивать цвет с фоном
+
+	//glEnable(GL_DEPTH_TEST);
+	//glDepthFunc(GL_GEQUAL);
+	//glDepthFunc(GL_LEQUAL);
+	//glDepthMask(GL_TRUE);
+
+	//glDepthFunc(GL_ALWAYS);
+
+	//glDepthFunc(GL_NEVER);
+	//glDepthFunc(GL_LESS);
+	//glDepthRange(-500, 500);
+	//glDepthRange(0, 1000);
 
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -198,24 +219,34 @@ int main(void) {
 		//Render here
 		//glClear(GL_COLOR_BUFFER_BIT); //default
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); //пусть будет так
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); //без этого работает
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); //при очистке глубины рисует чЄрный экран. почему?
 		//glClearStencil(0); без этого работает
 		//glStencilMask(1); //работает
 		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
-		glMatrixMode(GL_MODELVIEW);
+
+		/*glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glClearColor(0, 0, 0, 0); //default?
+		glClearColor(0, 0, 0, 0); //default?*/
+
 		//glClearColor(0, 0, 0, 1);
-		//glClearColor(1, 0, 0, 0);
+		//glClearColor(0, 0, 0, 0);
 
 		//cout << "Time of preparatio: " << (float)(clock() - test_startPreparation) / CLOCKS_PER_SEC << endl;
 		
 		//измерение FPS ч.2.2.1
 		//auto test_startGameplayProcessing = clock();
 		
+		/*glPushMatrix();
+		glTranslatef(400, 300, -500);
+		glRotatef(0, 1, 0, 0);
+		glRotatef(0, 0, 1, 0);
+		glTranslatef(-400, -300, 500);*/
+
 		//обработка геймпле€ и отрисовка текстур и интерфейса
 		gameplayProcessing();
-		
+	
+		//glPopMatrix();
+
 		//измерение FPS ч.2.2.2
 		//float test_timeGameplayProcessing = (float)(clock() - test_startGameplayProcessing) / CLOCKS_PER_SEC;
 		//cout << "Time of gameplayProcessing: " << test_timeGameplayProcessing << endl;
@@ -253,6 +284,70 @@ int main(void) {
 	glfwTerminate();
 	return 0;
 }
+
+
+
+
+
+
+
+
+/*void DrawCube(GLfloat centerPosX, GLfloat centerPosY, GLfloat centerPosZ, GLfloat edgeLength)
+{
+	GLfloat halfSideLength = edgeLength * 0.5f;
+
+	GLfloat vertices[] =
+	{
+		// front face
+		centerPosX - halfSideLength, centerPosY + halfSideLength, centerPosZ + halfSideLength, // top left
+		centerPosX + halfSideLength, centerPosY + halfSideLength, centerPosZ + halfSideLength, // top right
+		centerPosX + halfSideLength, centerPosY - halfSideLength, centerPosZ + halfSideLength, // bottom right
+		centerPosX - halfSideLength, centerPosY - halfSideLength, centerPosZ + halfSideLength, // bottom left
+
+		// back face
+		centerPosX - halfSideLength, centerPosY + halfSideLength, centerPosZ - halfSideLength, // top left
+		centerPosX + halfSideLength, centerPosY + halfSideLength, centerPosZ - halfSideLength, // top right
+		centerPosX + halfSideLength, centerPosY - halfSideLength, centerPosZ - halfSideLength, // bottom right
+		centerPosX - halfSideLength, centerPosY - halfSideLength, centerPosZ - halfSideLength, // bottom left
+
+		// left face
+		centerPosX - halfSideLength, centerPosY + halfSideLength, centerPosZ + halfSideLength, // top left
+		centerPosX - halfSideLength, centerPosY + halfSideLength, centerPosZ - halfSideLength, // top right
+		centerPosX - halfSideLength, centerPosY - halfSideLength, centerPosZ - halfSideLength, // bottom right
+		centerPosX - halfSideLength, centerPosY - halfSideLength, centerPosZ + halfSideLength, // bottom left
+
+		// right face
+		centerPosX + halfSideLength, centerPosY + halfSideLength, centerPosZ + halfSideLength, // top left
+		centerPosX + halfSideLength, centerPosY + halfSideLength, centerPosZ - halfSideLength, // top right
+		centerPosX + halfSideLength, centerPosY - halfSideLength, centerPosZ - halfSideLength, // bottom right
+		centerPosX + halfSideLength, centerPosY - halfSideLength, centerPosZ + halfSideLength, // bottom left
+
+		// top face
+		centerPosX - halfSideLength, centerPosY + halfSideLength, centerPosZ + halfSideLength, // top left
+		centerPosX - halfSideLength, centerPosY + halfSideLength, centerPosZ - halfSideLength, // top right
+		centerPosX + halfSideLength, centerPosY + halfSideLength, centerPosZ - halfSideLength, // bottom right
+		centerPosX + halfSideLength, centerPosY + halfSideLength, centerPosZ + halfSideLength, // bottom left
+
+		// top face
+		centerPosX - halfSideLength, centerPosY - halfSideLength, centerPosZ + halfSideLength, // top left
+		centerPosX - halfSideLength, centerPosY - halfSideLength, centerPosZ - halfSideLength, // top right
+		centerPosX + halfSideLength, centerPosY - halfSideLength, centerPosZ - halfSideLength, // bottom right
+		centerPosX + halfSideLength, centerPosY - halfSideLength, centerPosZ + halfSideLength  // bottom left
+	};
+
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //только границы полигонов
+	//glColor3f( colour[0], colour[1], colour[2] );
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, 0, vertices);
+
+	glDrawArrays(GL_QUADS, 0, 24);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+}*/
+
+
+
+
 
 
 

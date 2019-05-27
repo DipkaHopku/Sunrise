@@ -10,6 +10,7 @@
 
 #include "textures.h"
 #include "userInterface.h"
+#include "battle.h"
 
 using std::cout;
 using std::endl;

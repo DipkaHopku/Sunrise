@@ -13,10 +13,12 @@ std::ostream& operator << (std::ostream& os, const TextureName& obj) {
 
 const map<const TextureName, const string> textureFilenames = {
 	{TextureName::MAIN_MENU_BACKGROUND, "resources/textures/mainMenuBackground.png"},
-	{TextureName::TEST1, "resources/textures/test.png"},
-	{TextureName::TEST2, "resources/textures/test2.png"},
-	{TextureName::TEST3, "resources/textures/test3.png"},
-	{TextureName::WTF_CAT, "resources/textures/wtf_cat_test.png"}
+	{TextureName::GRASS, "resources/textures/grass.png"},
+	{TextureName::STONE, "resources/textures/stone.png"},
+	{TextureName::BUSH, "resources/textures/bush.png"},
+	{TextureName::PINE, "resources/textures/pine.png"},
+	{TextureName::SMALL_STONE, "resources/textures/smallStone.png"},
+	{TextureName::SHADOW, "resources/textures/shadow.png"}
 };
 
 class TextureProperties {
@@ -34,7 +36,8 @@ public:
 	}*/
 };
 
-map<TextureName, TextureProperties> texturesData;
+//map<TextureName, TextureProperties> texturesData;
+map<TextureName, const TextureProperties> texturesData;
 
 //---------------------------------------------------------------------------------------------
 //functions
@@ -79,7 +82,7 @@ void loadTextures() {
 	}
 }
 
-void drawTexture(const int xPos, const int yPos, const TextureName textureName) {
+/*void drawTexture(const int xPos, const int yPos, const TextureName textureName) {
 	auto _textureData = texturesData.find(textureName);
 	if (_textureData != texturesData.end()) {
 		TextureProperties _textureProperties = _textureData->second;
@@ -89,21 +92,21 @@ void drawTexture(const int xPos, const int yPos, const TextureName textureName) 
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, _textureProperties.ID); //чем меньше колво айди - тем лучше
 
-		/*glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);//выход текстурных координат за пределы 0-1
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);*/
+		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);//выход текстурных координат за пределы 0-1
+		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //сглаживание при уменьшении
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении //NEAREST - по ближайшему пикселю*/
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении //NEAREST - по ближайшему пикселю
 
 		glBegin(GL_QUADS); //устаревший интерфейс, НО время выполнения функции всё ещё менее 1 миллисекунды
 		glTexCoord2i(0, 0); glVertex2i(xPos, yPos); //i - это int
 		glTexCoord2i(1, 0); glVertex2i(xPos + _textureProperties.width, yPos);
 		glTexCoord2i(1, 1); glVertex2i(xPos + _textureProperties.width, yPos + _textureProperties.height);
 		glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _textureProperties.height);
-		/*//МОЖЕТ БЫТЬ! рисовать отдельные объекты из одной мегатекстуры быстрее, тк МОЖЕТ БЫТЬ операция glBindTexture() - очень дорогая //протестил. если уменьшение есть, то почти незаметное (<< 10%)
-		glTexCoord2f(0.5f, 0); glVertex2i(xPos, yPos); //i - это int
-		glTexCoord2f(1, 0); glVertex2i(xPos + textureProperties.width/2, yPos);
-		glTexCoord2f(1, 1); glVertex2i(xPos + textureProperties.width/2, yPos + textureProperties.height);
-		glTexCoord2f(0.5f, 1); glVertex2i(xPos, yPos + textureProperties.height);*/
+		//МОЖЕТ БЫТЬ! рисовать отдельные объекты из одной мегатекстуры быстрее, тк МОЖЕТ БЫТЬ операция glBindTexture() - очень дорогая //протестил. если уменьшение есть, то почти незаметное (<< 10%)
+		//glTexCoord2f(0.5f, 0); glVertex2i(xPos, yPos); //i - это int
+		//glTexCoord2f(1, 0); glVertex2i(xPos + textureProperties.width/2, yPos);
+		//glTexCoord2f(1, 1); glVertex2i(xPos + textureProperties.width/2, yPos + textureProperties.height);
+		//glTexCoord2f(0.5f, 1); glVertex2i(xPos, yPos + textureProperties.height);
 		glEnd();
 
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -159,7 +162,100 @@ void drawScaledTexture(
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);	
 	}
+}*/
+
+
+
+void drawTexture(
+	const int xPos, const int yPos,
+	const TextureName textureName,
+	const TextureScalingByHeightRatioType scalingByHeightRatioType, // = TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR,
+	const float scalingHeightFactor // = 1
+) {
+	auto _textureData = texturesData.find(textureName);
+	if (_textureData != texturesData.end()) {
+		TextureProperties _textureProperties = _textureData->second;
+
+		int _width, _height;
+		float _ratio;
+
+		switch (scalingByHeightRatioType) {
+		case TextureScalingByHeightRatioType::PIXELS_NUMBER:
+			_height = scalingHeightFactor;
+			_ratio = (float)_height / _textureProperties.height;
+			_width = _textureProperties.width * _ratio;
+			break;
+		case TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR:
+			_ratio = scalingHeightFactor;
+			_height = _textureProperties.height * _ratio;
+			_width = _textureProperties.width * _ratio;
+			break;
+		default: //никогда не заходит?
+			cerr << "Error: Unknown ratio type of texture scaling by height" << endl;
+			return;
+			break;
+		}
+
+		glColor4f(1, 1, 1, 1); //чтобы текстура имела натуральный цвет
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //сглаживание при уменьшении
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении //NEAREST - по ближайшему пикселю
+
+		glBegin(GL_QUADS);
+		glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
+		glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos);
+		glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height);
+		glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height);
+		glEnd();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
+	}
 }
+
+
+
+void getTextureProperties(TextureName textureName, int* width, int* height) {
+	if (width != nullptr) *width = 0;
+	if (height != nullptr) *height = 0;
+
+	auto _textureData = texturesData.find(textureName);
+	if (_textureData != texturesData.end()) {
+		if (width != nullptr) *width = _textureData->second.width;
+		if (height != nullptr) *height = _textureData->second.height;
+	}
+}
+
+
+
+/*void _drawTextureWithDepth(const int xPos, const int yPos, int zPos, const TextureName textureName) {
+	auto _textureData = texturesData.find(textureName);
+	if (_textureData != texturesData.end()) {
+		TextureProperties _textureProperties = _textureData->second;
+
+		glColor4f(1, 1, 1, 1); //чтобы текстура имела натуральный цвет
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, _textureProperties.ID); //чем меньше колво айди - тем лучше
+
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //сглаживание при уменьшении
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении //NEAREST - по ближайшему пикселю
+
+		glBegin(GL_QUADS); //устаревший интерфейс, НО время выполнения функции всё ещё менее 1 миллисекунды
+		glTexCoord3i(0, 0, 1); glVertex3i(xPos, yPos, zPos); //i - это int
+		glTexCoord3i(1, 0, 1); glVertex3i(xPos + _textureProperties.width, yPos, zPos);
+		glTexCoord3i(1, 1, 1); glVertex3i(xPos + _textureProperties.width, yPos + _textureProperties.height, zPos);
+		glTexCoord3i(0, 1, 1); glVertex3i(xPos, yPos + _textureProperties.height, zPos);
+		glEnd();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
+	}
+}*/
+
 
 /*void drawQuadRotated45DegreesWithSameAngles(int xPos, int yPos, int width) {
 	glVertex2i(_xPos + _stencilLineWindth - 4, _yPos + _stencilLineWindth + 4); //<

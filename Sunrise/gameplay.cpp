@@ -32,16 +32,27 @@ void gameplayProcessing() {
 		break;
 
 	case ApplicationState::MAIN_MENU :
-		drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
+		drawTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
+		//drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
 		//drawScaledTexture(0, 0, TextureName::WTF_CAT, TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1);
 		break;
 
 	case ApplicationState::BATTLE :
-		drawTexture(10, 10, TextureName::TEST2);
-		drawTexture(200, 100, TextureName::TEST2);
-		drawTexture(150, 400, TextureName::TEST2);
-		drawTexture(0, 0, TextureName::TEST3);
-		drawTexture(0, 350, TextureName::WTF_CAT);
+		Battle::Instance().draw();
+
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		//_drawTextureWithDepth(0, 0, 10, TextureName::MAIN_MENU_BACKGROUND);
+		/*_drawTextureWithDepth(20, 20, 3, TextureName::GRASS);
+		_drawTextureWithDepth(80, 40, 3, TextureName::GRASS);
+		_drawTextureWithDepth(40, 40, 2, TextureName::BUSH);
+		_drawTextureWithDepth(50, 50, 1, TextureName::STONE);
+		_drawTextureWithDepth(60, 60, 0, TextureName::WTF_CAT);*/
+
+		/*drawTexture(10, 10, TextureName::STONE);
+		drawTexture(200, 100, TextureName::STONE);
+		drawTexture(150, 400, TextureName::STONE);
+		drawTexture(0, 0, TextureName::STONE);
+		drawTexture(0, 350, TextureName::WTF_CAT);*/
 
 		/*for (int i = 400; i < 10400; i++) { //14-20 мс медиана - 15
 			if (i % 2 == 0) drawTexture(i, i, TextureName::TEST2);
@@ -55,7 +66,8 @@ void gameplayProcessing() {
 		break;
 
 	case ApplicationState::OPTIONS:
-		drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
+		drawTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
+		//drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
 		break;
 	}
 

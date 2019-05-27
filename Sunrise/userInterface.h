@@ -118,8 +118,11 @@ private:
 
 static class ApplicationStatePlanningController {
 	friend void gameplayProcessing();
+	friend void callback_startButton_onClick();
 	friend void callback_optionsButton_onClick();
 	friend void callback_backButton_onClick();
+	friend void callback_exitToMainMenuButton_onClick();
+
 	friend void callback_key(GLFWwindow*, const int, const int, const int, const int);
 
 private:

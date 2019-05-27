@@ -48,6 +48,7 @@ void callback_optionsButton_onClick();
 void callback_exitButton_onClick();
 void callback_backButton_onClick();
 void callback_applyButton_onClick();
+void callback_exitToMainMenuButton_onClick();
 
 const map<const ButtonType, const ButtonProperties> buttonsData = {
 	{ButtonType::START, ButtonProperties(	"Start",	FontName::BUTTON,	callback_startButton_onClick)},
@@ -361,28 +362,58 @@ ApplicationState UserInterface::getApplicationState() const {
 
 bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNext) {
 	//запрос на то чтобы остаться там где и был - это ок
-	if (applicationStateNext == _applicationState) {
+	if (_applicationState == applicationStateNext) {
 		_applicationStateNext = applicationStateNext;
 		return true;
 	}
+
 	//после запуска открывается главное меню
-	else if (applicationStateNext == ApplicationState::MAIN_MENU && _applicationState == ApplicationState::APPLICATION_LAUNCH) { //проверка на то что до этого не нажимались другие кнопки
+	else if (_applicationState == ApplicationState::APPLICATION_LAUNCH 
+		&& applicationStateNext == ApplicationState::MAIN_MENU
+	) { ////проверка на то что до этого не нажимались другие кнопки
 		_applicationStateNext = applicationStateNext;
 		createMainMenu();
 		return true;
 	}
+
 	//из главного меню можно перейти в опции
-	else if (applicationStateNext == ApplicationState::OPTIONS && _applicationState == ApplicationState::MAIN_MENU) { //проверка на то что до этого не нажимались другие кнопки
+	else if (_applicationState == ApplicationState::MAIN_MENU
+		&& applicationStateNext == ApplicationState::OPTIONS
+	) { ////проверка на то что до этого не нажимались другие кнопки
 		_applicationStateNext = applicationStateNext; //= ApplicationState::OPTIONS
 		createOptionsMenu();
 		return true;
 	}
+
 	//... и обратно
-	else if (applicationStateNext == ApplicationState::MAIN_MENU && _applicationState == ApplicationState::OPTIONS) { //проверка на то что до этого не нажимались другие кнопки
-		_applicationStateNext = applicationStateNext; //= ApplicationState::OPTIONS
+	else if (_applicationState == ApplicationState::OPTIONS
+		&& applicationStateNext == ApplicationState::MAIN_MENU
+	) {
+		_applicationStateNext = applicationStateNext; //= ApplicationState::MAIN_MENU
 		createMainMenu();
 		return true;
 	}
+
+	//из главного меню можно перейти в сражение //TODO
+	else if (_applicationState == ApplicationState::MAIN_MENU
+		&& applicationStateNext == ApplicationState::BATTLE
+	) {
+		_applicationStateNext = applicationStateNext; //= ApplicationState::BATTLE
+		setUIItemsContainer(nullptr);
+		Battle::Instance().begin();
+		return true;
+	}
+
+	//...и обратно //TODO
+	else if (_applicationState == ApplicationState::BATTLE
+		&& applicationStateNext == ApplicationState::MAIN_MENU
+		) {
+		_applicationStateNext = applicationStateNext; //= ApplicationState::BATTLE
+		createMainMenu();
+		Battle::Instance().end();
+		return true;
+	}
+
 	return false;
 }
 
@@ -619,7 +650,7 @@ public:
 	#3 - marginSize in pixels
 	*/
 	//устанавливается всё кроме позиции кнопки, её устанавливает контейнер
-	Label(const LabelType labelType, const int paddingSize, const int marginSize) { //noexcept {
+	Label(const LabelType labelType, const int paddingSize = 0, const int marginSize = 0) { //noexcept {
 		auto _labelData = labelsData.find(labelType);
 		if (_labelData != labelsData.end()) {
 			_title = _labelData->second.getTitle();
@@ -783,7 +814,7 @@ private:
 
 public:
 	//устанавливается всё кроме позиции кнопки, её устанавливает контейнер
-	Button(const ButtonType buttonType, const int paddingSize, const int marginSize) { //noexcept {
+	Button(const ButtonType buttonType, const int paddingSize = 0, const int marginSize = 0) { //noexcept {
 		auto _buttonData = buttonsData.find(buttonType);
 		if (_buttonData != buttonsData.end()) {
 			_title = _buttonData->second.getTitle();
@@ -1162,7 +1193,8 @@ void createOptionsMenu() {
 
 //main menu
 void callback_startButton_onClick() {
-	cout << "start button is pressed" << endl;
+	//cout << "start button is pressed" << endl;
+	ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::BATTLE);
 }
 
 void callback_loadButton_onClick() {
@@ -1188,6 +1220,10 @@ void callback_backButton_onClick() {
 
 void callback_applyButton_onClick() {
 	cout << "apply button is pressed" << endl;
+}
+
+void callback_exitToMainMenuButton_onClick() {
+	ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::MAIN_MENU);
 }
 
 
@@ -1234,6 +1270,10 @@ void callback_key(GLFWwindow *window, const int key, const int scancode, const i
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::OPTIONS) {
 			callback_backButton_onClick();
+		}
+
+		else if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::BATTLE) { //TODO
+			callback_exitToMainMenuButton_onClick();
 		}
 	}
 	//glfwSetWindowShouldClose(window, GL_TRUE);

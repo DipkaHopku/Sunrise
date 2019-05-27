@@ -33,10 +33,13 @@ using std::endl;
 
 enum class TextureName {
 	MAIN_MENU_BACKGROUND, 
-	TEST1,
-	TEST2,
-	TEST3,
-	WTF_CAT
+	GRASS,
+	STONE,
+	BUSH,
+	PINE,
+	SMALL_STONE,
+	SHADOW,
+	NONE //"пустая" текстура
 };
 
 enum class TextureScalingByHeightRatioType {
@@ -50,9 +53,21 @@ enum class TextureScalingByHeightRatioType {
 //Загрузка всех текстур игры
 void loadTextures();
 
-void drawTexture(int, int, TextureName);
+//void drawTexture(int, int, TextureName);
 
-void drawScaledTexture(int, int, TextureName, TextureScalingByHeightRatioType, float);
+//void drawScaledTexture(int, int, TextureName, TextureScalingByHeightRatioType, float);
+
+void drawTexture(int, int, TextureName, TextureScalingByHeightRatioType = TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, float = 1);
+
+//void _drawTextureWithDepth(int, int, int, const TextureName);
+
+/*
+arguments:
+#1 - texture name
+#2 - returning width
+#3 - returning height
+*/
+void getTextureProperties(TextureName, int*, int*);
 
 //Texture mergeTextures(struct[](idTexture, xpos, ypos) //чтобы не рисовать заново поля каждый раз
 
