@@ -4,7 +4,7 @@
 #include <iostream>
 #include <ctime>
 
-//#include "userInterface.h"
+#include "userInterface.h"
 #include "textures.h"
 
 enum class BiomeType {
@@ -24,6 +24,8 @@ class BattleField;
 
 class Battle {
 private:
+	//bool _isScrollingEnabled = false;
+
 	BattleField* _battleField = nullptr;
 
 	Battle();
@@ -40,5 +42,10 @@ public:
 
 	void draw();
 
-	void scrollBattleField(int xPixels, int yPixels);
+	void getBattleFieldProperties(int*, int*) const;
+
+	//void scrollBattleField(int xPixels, int yPixels);
+	void switchBattleFieldScrolling(bool scrollingState);
+
+	void updateBattleFieldAfterWindowResize();
 };

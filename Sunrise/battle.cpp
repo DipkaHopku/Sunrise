@@ -1,7 +1,13 @@
 #include "battle.h"
 
-const float CELL_WIDTH = 128;
-const float CELL_HEIGHT = 64;
+//вообще то эти значения надо получать из соответсвующей текстуры, но... ок
+const int CELL_WIDTH = 128;
+const int CELL_HEIGHT = 64;
+
+const int TOP_LAYER_THICKNESS_DECORATING_CELLS = 4;
+const int BOTTOM_LAYER_THICKNESS_DECORATING_CELLS = 2;
+const int LEFT_LAYER_THICKNESS_DECORATING_CELLS = 2;
+const int RIGHT_LAYER_THICKNESS_DECORATING_CELLS = 2;
 
 
 
@@ -87,29 +93,102 @@ public:
 
 	void drawSurface(const int xPixels, const int yPixels) const {
 		int _xPixelsPos = 0, _yPixelsPos = 0;
-		/*if (_xPos % 2 == 0) {
-			_xPixelsPos = xPixels + _xPos * (CELL_WIDTH * 1.5);
-		}*/
+
 		_xPixelsPos = xPixels + _xPos * (CELL_WIDTH * 0.75);
+
 		if (_xPos % 2 == 0) { //чётный столбец
 			_yPixelsPos = yPixels + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
 		} else { //нечётный стобец
-			_yPixelsPos = yPixels + _yPos * CELL_HEIGHT;
+			_yPixelsPos = yPixels + _yPos * CELL_HEIGHT; //на пол клетки выше на экране
 		}
 		
 		const TextureName _textureName = biomesData.at(_biome).getTextureName();
 
 		drawTexture(_xPixelsPos, _yPixelsPos, _textureName);
 
+		int _battleFieldWidth, _battleFieldHeight;
+		Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
+
 		glEnable(GL_LINE_SMOOTH);
 		glColor4f(0, 0, 0, 0.5);
 		glLineWidth(1);
-		glBegin(GL_LINE_STRIP);
-		glVertex2i(_xPixelsPos,							_yPixelsPos + (CELL_HEIGHT * 0.5));
-		glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25),	_yPixelsPos + CELL_HEIGHT);
-		glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75),	_yPixelsPos + CELL_HEIGHT);
-		glVertex2i(_xPixelsPos + CELL_WIDTH,			_yPixelsPos + (CELL_HEIGHT * 0.5));
-		glEnd();
+
+		//glDisable(GL_LINE_SMOOTH); //изза горизонтальнйо линии
+
+		if (_xPos >= LEFT_LAYER_THICKNESS_DECORATING_CELLS
+			&& _xPos < _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
+			&& _yPos < _battleFieldHeight - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
+			&& _yPos >= TOP_LAYER_THICKNESS_DECORATING_CELLS
+		) {
+			//рисуем допоплнительные боковые линии
+			//слева
+			if (_xPos == LEFT_LAYER_THICKNESS_DECORATING_CELLS) {
+				glBegin(GL_LINES);
+				glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25),	_yPixelsPos);
+				glVertex2i(_xPixelsPos,							_yPixelsPos + (CELL_HEIGHT * 0.5));
+				glEnd();
+			}
+			//справо
+			else if (_xPos == _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 1) {
+				glBegin(GL_LINES);
+				glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75),	_yPixelsPos);
+				glVertex2i(_xPixelsPos + CELL_WIDTH,			_yPixelsPos + (CELL_HEIGHT * 0.5));
+				glEnd();
+			}
+
+			//верхний уровень
+			if (_yPos == TOP_LAYER_THICKNESS_DECORATING_CELLS) {
+				if (_xPos % 2 == 0) { //чётные столбцы
+					if (_xPos == LEFT_LAYER_THICKNESS_DECORATING_CELLS
+						|| _xPos == _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 1
+						) { //левый или правый
+						glBegin(GL_LINES);
+						glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos);
+						glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos);
+						glEnd();
+
+						if (_xPos == LEFT_LAYER_THICKNESS_DECORATING_CELLS) { //левый столбец
+							glBegin(GL_LINES);
+							glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos);
+							glVertex2i(_xPixelsPos + CELL_WIDTH, _yPixelsPos - (CELL_HEIGHT * 0.5));
+							glEnd();
+						}
+						else { //правый
+							glBegin(GL_LINES);
+							glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos);
+							glVertex2i(_xPixelsPos, _yPixelsPos - (CELL_HEIGHT * 0.5));
+							glEnd();
+						}
+					}
+					else { //чётные, не крайние стобцы
+						//"верхняя" нижняя обводка
+						glBegin(GL_LINE_STRIP);
+						glVertex2i(_xPixelsPos, _yPixelsPos - (CELL_HEIGHT * 0.5));
+						glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos);
+						glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos);
+						glVertex2i(_xPixelsPos + CELL_WIDTH, _yPixelsPos - (CELL_HEIGHT * 0.5));
+						glEnd();
+					}
+				}
+				else { //нечётные столбцы
+					//линия сверху
+					glBegin(GL_LINES);
+					glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos);
+					glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos);
+					glEnd();
+				}
+			}
+
+			//glEnable(GL_LINE_SMOOTH);
+
+			//нижняя обводка
+			glBegin(GL_LINE_STRIP);
+			glVertex2i(_xPixelsPos, _yPixelsPos + (CELL_HEIGHT * 0.5));
+			glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos + CELL_HEIGHT);
+			glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos + CELL_HEIGHT);
+			glVertex2i(_xPixelsPos + CELL_WIDTH, _yPixelsPos + (CELL_HEIGHT * 0.5));
+			glEnd();
+		}
 	}
 
 	void drawObject(const int xPixels, const int yPixels) const {
@@ -160,35 +239,45 @@ class Biome {
 
 class BattleField {
 private:
-	int _xPixels = 0, _yPixels = 0;
+	int _xPixelPos =  - CELL_WIDTH * 0.25, _yPixelPos = - CELL_HEIGHT * 0.5;
 	int _width, _height;
+
+	bool _isScrollingEnabled = false;
+	int _xScrollingStartCursorPos = 0, _yScrollingStartCursorPos = 0;
+	int _xScrollingStartPixelPos = _xPixelPos, _yScrollingStartPixelPos = _yPixelPos;
+
 	Cell*** _battlefield = nullptr;
 
 	//отрисовка поверхностей
 	void drawCellSurfaces() const {
-		for (int x = 0; x < _width; x++) {
-			for (int y = 0; y < _height; y++) {
-				_battlefield[x][y]->drawSurface(_xPixels, _yPixels);
+		for (int y = 0; y < _height; y++) {
+			for (int x = 0; x < _width; x++) {
+				_battlefield[x][y]->drawSurface(_xPixelPos, _yPixelPos);
 			}
 		}
 	}
 	
 	//отрисовка объектов и юнитов(первый раз)
 	void drawCellObjects() const {
-		for (int x = 0; x < _width; x++) {
-			for (int y = 0; y < _height; y++) {
-				int _y;
-				y < _height / 2 ? _y = y * 2 : _y = (y - _height / 2) * 2 + 1;
-				_battlefield[x][y]->drawObject(_xPixels, _yPixels);
+		for (int y = 0; y < _height; y++) {
+			for (int x = 0; x < _width; x++) {
+				/*int _y;
+				y < _height / 2 ? _y = y * 2 : _y = (y - _height / 2) * 2 + 1;*/
+				int _x;
+				x < _width / 2 ? _x = x * 2 + 1 : _x = (x - _width / 2) * 2;
+				_battlefield[_x][y]->drawObject(_xPixelPos, _yPixelPos);
+				//_battlefield[x][y]->drawUnit(_xPixels, _yPixels);
 			}
 		}
 	}
 
 	//отрисовка юнитов второй раз с прозрачностью для их видимости сквозь препятствия
 	void drawCellUnitBacklight() const {
-		for (int x = 0; x < _width; x++) {
-			for (int y = 0; y < _height; y++) {
-				//_battlefield[x][y]->draw(_xPixels, _yPixels);
+		for (int y = 0; y < _height; y++) {
+			for (int x = 0; x < _width; x++) {
+				glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA); //или отдельную функцию для Cell? типа Cell->drawUnitBacklight();
+				//_battlefield[x][y]->drawUnit(_xPixels, _yPixels);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			}
 		}
 	}
@@ -196,8 +285,10 @@ private:
 public:
 	BattleField() {
 		srand(time(0));
-		_width = rand() % 10 + 15;
-		_height = rand() % 10 + 15;
+		//_width = rand() % 10 + 15;
+		//_height = rand() % 10 + 15;
+		_width = rand() % 10 + 16 + LEFT_LAYER_THICKNESS_DECORATING_CELLS + RIGHT_LAYER_THICKNESS_DECORATING_CELLS;
+		_height = rand() % 10 + 16 + TOP_LAYER_THICKNESS_DECORATING_CELLS + BOTTOM_LAYER_THICKNESS_DECORATING_CELLS;
 
 		_battlefield = new Cell**[_width];
 		for (int x = 0; x < _width; x++) {
@@ -207,29 +298,71 @@ public:
 				int _biomeValue = rand() % 100;
 				//BiomeType _biomeType = BiomeType::GRASS;
 
-				//травка-муравка
-				if (0 <= _biomeValue && _biomeValue < 80) {
-					_battlefield[x][y] = new Cell(x, y, BiomeType::GRASS);
+				//левые, правые и верхние декорации
+				if (x < LEFT_LAYER_THICKNESS_DECORATING_CELLS 
+					|| x >= _width - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
+					|| y < TOP_LAYER_THICKNESS_DECORATING_CELLS
+				) {
+					//сосенка
+					if (0 <= _biomeValue && _biomeValue < 50) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::PINE);
+					}
+
+					//большой камушек
+					else if (50 <= _biomeValue && _biomeValue < 70) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::STONE);
+					}
+
+					//кустик
+					else if (70 <= _biomeValue && _biomeValue < 90) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::BUSH);
+					}
+
+					//маленький камушек
+					else if (90 <= _biomeValue && _biomeValue < 100) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::SMALL_STONE);
+					}
 				}
 
-				//кустик
-				else if (75 <= _biomeValue && _biomeValue < 90) {
-					_battlefield[x][y] = new Cell(x, y, BiomeType::BUSH);
+				//нижние декорации
+				else if (y >= _height - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) {
+					//кустик
+					if (0 <= _biomeValue && _biomeValue < 60) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::BUSH);
+					}
+
+					//маленький камушек
+					else if (60 <= _biomeValue && _biomeValue < 100) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::SMALL_STONE);
+					}
 				}
 
-				//маленький камушек
-				else if (90 <= _biomeValue && _biomeValue < 95) {
-					_battlefield[x][y] = new Cell(x, y, BiomeType::SMALL_STONE);
-				}
+				//обычная карта
+				else {
+					//травка-муравка
+					if (0 <= _biomeValue && _biomeValue < 80) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::GRASS);
+					}
 
-				//большой камушек
-				else if (95 <= _biomeValue && _biomeValue < 97) {
-					_battlefield[x][y] = new Cell(x, y, BiomeType::STONE);
-				}
+					//кустик
+					else if (75 <= _biomeValue && _biomeValue < 90) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::BUSH);
+					}
 
-				//сосенка
-				else if (97 <= _biomeValue && _biomeValue < 100) {
-					_battlefield[x][y] = new Cell(x, y, BiomeType::PINE);
+					//маленький камушек
+					else if (90 <= _biomeValue && _biomeValue < 95) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::SMALL_STONE);
+					}
+
+					//большой камушек
+					else if (95 <= _biomeValue && _biomeValue < 97) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::STONE);
+					}
+
+					//сосенка
+					else if (97 <= _biomeValue && _biomeValue < 100) {
+						_battlefield[x][y] = new Cell(x, y, BiomeType::PINE);
+					}
 				}
 			}
 		}
@@ -246,11 +379,120 @@ public:
 		_battlefield = nullptr;
 	}
 
-	void draw() const {
+	void draw() {
+		if (_isScrollingEnabled) {
+			int _xCursorPos = 0, _yCursorPos = 0;
+			UserInterface::Instance().getCursorPos(&_xCursorPos, &_yCursorPos);
+
+			//cout << "_xScrollingStartPosition: " << _xScrollingStartCursorPos << endl;
+			_xPixelPos = _xScrollingStartPixelPos + (_xCursorPos - _xScrollingStartCursorPos);
+			_yPixelPos = _yScrollingStartPixelPos + (_yCursorPos - _yScrollingStartCursorPos);
+
+			int _windowWidth = 0, _windowHeight = 0;
+			UserInterface::Instance().getWindowSize(&_windowWidth, &_windowHeight);
+
+			//ограничение прокрутки влево
+			if (_xPixelPos > -CELL_WIDTH * 0.25) {
+				//поправляем прокрутку для удобства в случае смены направления прокрутки
+				_xScrollingStartCursorPos += _xPixelPos + CELL_WIDTH * 0.25;
+
+				//упираемся в границу карты
+				_xPixelPos = -CELL_WIDTH * 0.25;
+			}
+
+			//ограничение прокрутки вправо
+			else if (_xPixelPos < - (_width * (CELL_WIDTH * 0.75) - _windowWidth)) {
+				//поправляем прокрутку для удобства в случае смены направления прокрутки
+				_xScrollingStartCursorPos += _xPixelPos + (_width * (CELL_WIDTH * 0.75) - _windowWidth);
+
+				//упираемся в границу карты
+				_xPixelPos = -(_width * (CELL_WIDTH * 0.75) - _windowWidth);
+			}
+
+			//ограничение прокрутки вверх
+			if (_yPixelPos > -CELL_HEIGHT * 0.5) {
+				//поправляем прокрутку для удобства в случае смены направления прокрутки
+				_yScrollingStartCursorPos += _yPixelPos + CELL_HEIGHT * 0.5;
+
+				//упираемся в границу карты
+				_yPixelPos = -CELL_HEIGHT * 0.5;
+			}
+
+			//ограничение прокрутки вниз
+			else if (_yPixelPos < - (_height * CELL_HEIGHT - _windowHeight)) {
+				//поправляем прокрутку для удобства в случае смены направления прокрутки
+				_yScrollingStartCursorPos += _yPixelPos + (_height * CELL_HEIGHT - _windowHeight);
+
+				//упираемся в границу карты
+				_yPixelPos = -(_height * CELL_HEIGHT - _windowHeight);
+			}
+		}
+
+		//отрисовка поля битвы
 		drawCellSurfaces();
 		drawCellObjects();
 	}
-	//прокрутка карты
+
+	void switchScrolling(bool scrollingState) {
+		if (_isScrollingEnabled == false && scrollingState == true) {
+			_isScrollingEnabled = true;
+
+			int _xCursorPos, _yCursorPos;
+			UserInterface::Instance().getCursorPos(&_xCursorPos, &_yCursorPos);
+
+			_xScrollingStartCursorPos = _xCursorPos;
+			_yScrollingStartCursorPos = _yCursorPos;
+
+			_xScrollingStartPixelPos = _xPixelPos;
+			_yScrollingStartPixelPos = _yPixelPos;
+		}
+
+		else if (_isScrollingEnabled == true && scrollingState == false) {
+			_isScrollingEnabled = false;
+
+			_xScrollingStartCursorPos = 0;
+			_yScrollingStartCursorPos = 0;
+		}
+	}
+
+	//void getProperties(int* xPixelPos, int* yPixelPos, int* width, int* height) const {
+	void getProperties(int* width, int* height) const {
+		//if (xPixelPos != nullptr) *xPixelPos = _xPixelPos;
+		//if (yPixelPos != nullptr) *yPixelPos = _yPixelPos;
+
+		if (width != nullptr) *width = _width;
+		if (height != nullptr) *height = _height;
+	}
+	
+	void updateAfterWindowResize() {
+		int _windowWidth = 0, _windowHeight = 0;
+		UserInterface::Instance().getWindowSize(&_windowWidth, &_windowHeight);
+
+		//ограничение прокрутки влево
+		if (_xPixelPos > -CELL_WIDTH * 0.25) {
+			//упираемся в границу карты
+			_xPixelPos = -CELL_WIDTH * 0.25;
+		}
+
+		//ограничение прокрутки вправо
+		else if (_xPixelPos < -(_width * (CELL_WIDTH * 0.75) - _windowWidth)) {
+			//упираемся в границу карты
+			_xPixelPos = -(_width * (CELL_WIDTH * 0.75) - _windowWidth);
+		}
+
+		//ограничение прокрутки вверх
+		if (_yPixelPos > -CELL_HEIGHT * 0.5) {
+			//упираемся в границу карты
+			_yPixelPos = -CELL_HEIGHT * 0.5;
+		}
+
+		//ограничение прокрутки вниз
+		else if (_yPixelPos < -(_height * CELL_HEIGHT - _windowHeight)) {
+			//упираемся в границу карты
+			_yPixelPos = -(_height * CELL_HEIGHT - _windowHeight);
+		}
+	}
+
 	//передвижение
 };
 
@@ -277,16 +519,40 @@ void Battle::end() {
 	if (_battleField != nullptr) { //TODO
 		delete _battleField;
 		_battleField = nullptr;
+		switchBattleFieldScrolling(false);
 	}
 }
 
 void Battle::draw() {
 	if (_battleField != nullptr) {
 		_battleField->draw();
+		//switchBattleFieldScrolling(false);
 	}
 }
 
-void Battle::scrollBattleField(int xPixels, int yPixels) {
+void Battle::getBattleFieldProperties(int* width, int* height) const {
+	if (_battleField != nullptr) {
+		_battleField->getProperties(width, height);
+	}
+	else {
+		if (width != nullptr) *width = 0;
+		if (height != nullptr) *height = 0;
+	}
+}
+
+//void Battle::scrollBattleField(int xPixels, int yPixels) {}
+
+void Battle::switchBattleFieldScrolling(bool scrollingState) {
+	//cout << "scrollingState: " << scrollingState << endl;
+	if (_battleField != nullptr) {
+		_battleField->switchScrolling(scrollingState);
+	}
+}
+
+void Battle::updateBattleFieldAfterWindowResize() {
+	if (_battleField != nullptr) {
+		_battleField->updateAfterWindowResize();
+	}
 }
 
 
@@ -294,7 +560,7 @@ void Battle::scrollBattleField(int xPixels, int yPixels) {
 //---------------------------------------------------------------------------------------------
 //class Unit definition
 
-class Unit {
+class Unit : ActiveGraphicItem {
 	int _xPos = 0, _yPos = 0;
 };
 

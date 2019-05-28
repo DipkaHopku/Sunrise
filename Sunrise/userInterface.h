@@ -122,8 +122,11 @@ static class ApplicationStatePlanningController {
 	friend void callback_optionsButton_onClick();
 	friend void callback_backButton_onClick();
 	friend void callback_exitToMainMenuButton_onClick();
-
+	
 	friend void callback_key(GLFWwindow*, const int, const int, const int, const int);
+	friend void callback_mouseButton(GLFWwindow*, const int, const int, const int);
+	friend void callback_cursorEnter(GLFWwindow*, int);
+	friend void callback_cursorPos(GLFWwindow*, double, double);
 
 private:
 	static ApplicationState getApplicationState();
@@ -206,6 +209,8 @@ public:
 	void triggerActiveGraphicItemOnClickCallbackAtPoint(int, int);
 
 	void setCursorPos(int, int);
+
+	void getCursorPos(int*, int*);
 
 	//подготовка к отрисовке следующего кадра. результат - нажатие кнопок мыши не провоцирует начала выполнения функций активных элементов интерфейса. на новом кадре положения элементов интрефейсов может меняться
 	void clearControlField();
@@ -300,11 +305,16 @@ public:
 	virtual void onClick() const = 0;
 };*/
 
+
+
 //---------------------------------------------------------------------------------------------
 //class ActiveGraphicItem declaration
+//разделить на onClick, onMouseOver и scrolledItem, и добавить scrolledItem к BattleField?
 
 class ActiveGraphicItem : public virtual GraphicItem {
 protected:
+	//унаследовано int _xPos = 0, _yPos = 0;
+
 	bool _mouseOver = false;
 	void(*_onClickCallback)();
 
@@ -392,3 +402,4 @@ void callback_windowSize(GLFWwindow*, int, int);
 void callback_key(GLFWwindow*, int, int, int, int);
 void callback_mouseButton(GLFWwindow*, int, int, int);
 void callback_cursorPos(GLFWwindow*, double, double);
+void callback_cursorEnter(GLFWwindow*, int);

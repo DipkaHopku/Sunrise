@@ -67,6 +67,7 @@ int main(void) {
 	glfwSetKeyCallback(window, callback_key);
 	glfwSetMouseButtonCallback(window, callback_mouseButton);
 	glfwSetCursorPosCallback(window, callback_cursorPos);
+	glfwSetCursorEnterCallback(window, callback_cursorEnter);
 
 	if (glewInit() != GLEW_OK) {
 		return -1;

@@ -57,7 +57,10 @@ void loadTextures();
 
 //void drawScaledTexture(int, int, TextureName, TextureScalingByHeightRatioType, float);
 
-void drawTexture(int, int, TextureName, TextureScalingByHeightRatioType = TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, float = 1);
+void drawTexture(int, int, 
+	TextureName, 
+	bool = false,
+	TextureScalingByHeightRatioType = TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, float = 1);
 
 //void _drawTextureWithDepth(int, int, int, const TextureName);
 

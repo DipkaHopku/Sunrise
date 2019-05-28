@@ -183,6 +183,8 @@ void UserInterface::setWindowSize(int windowWidth, int windowHeight) {
 	clearControlField();
 
 	updateContainerProperties();
+
+	Battle::Instance().updateBattleFieldAfterWindowResize();
 }
 
 void UserInterface::getWindowSize(int* width, int* height) const {
@@ -210,6 +212,11 @@ void UserInterface::triggerActiveGraphicItemOnClickCallbackAtPoint(int xPos, int
 	ActiveGraphicItem* activeGraphicItem = _controlField[xPos][yPos];
 	if (activeGraphicItem != nullptr) {
 		activeGraphicItem->onClick();
+	} 
+	
+	//включение скрола в сражении
+	else if (_applicationState == ApplicationState::BATTLE) {
+		Battle::Instance().switchBattleFieldScrolling(true);
 	}
 }
 
@@ -225,7 +232,8 @@ void UserInterface::setCursorPos(int xCursorPos, int yCursorPos) {
 		_prevActiveGraphicItem = _controlField[_xCursorPos][_yCursorPos];
 	}
 
-	if (xCursorPos > -1 && yCursorPos > -1) { //курсор в пределах экрана
+	if (xCursorPos > -1 && yCursorPos > -1
+		&& xCursorPos <= _windowWidth && yCursorPos <= _windowHeight) { //курсор в пределах экрана
 		//получаем объект над которым сейчас находится курсор
 		ActiveGraphicItem* _activeGrapicItem = _controlField[xCursorPos][yCursorPos];
 
@@ -275,6 +283,11 @@ void UserInterface::setCursorPos(int xCursorPos, int yCursorPos) {
 	} else {
 		_controlField[xCursorPos][yCursorPos]->onMouseOver(false);
 	}*/
+}
+
+void UserInterface::getCursorPos(int* xPos, int* yPos) {
+	if (xPos != nullptr) *xPos = _xCursorPos;
+	if (yPos != nullptr) *yPos = _yCursorPos;
 }
 
 void UserInterface::clearControlField() {
@@ -742,14 +755,18 @@ private:
 
 			glDisable(GL_ALPHA_TEST);
 			
+			glDisable(GL_STENCIL_TEST);
+
 			////рисую текст с инвертированной альфой, чтобы были края с плавной альфой
-			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-			glStencilFunc(GL_ALWAYS, 1, 255);
+
+			//glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP); //эти края рисуются всегда, так что зачем выполнять stencil_test в принципе при рисовке краёв
+			//glStencilFunc(GL_ALWAYS, 1, 255);
 
 			//glAlphaFunc(GL_LESS, 0.2);
 
-			glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_CONSTANT_ALPHA); //инвертирую альфу и рисую. цвет не blendColor?
-			glBlendColor(1, 1, 1, 1);
+			glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA); //так наверное лучше
+			//glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_CONSTANT_ALPHA); //инвертирую альфу и рисую. цвет не blendColor?
+			//glBlendColor(1, 1, 1, 1);
 
 			drawString(
 				_xPos + _paddingSize,
@@ -759,6 +776,8 @@ private:
 				BUTTON_FONT_COLOR_RGB);
 
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			glEnable(GL_STENCIL_TEST);
 
 			//объект для отображения
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -1283,15 +1302,26 @@ void callback_mouseButton(GLFWwindow *window, const int button, const int action
 	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
 		double cursor_x, cursor_y;
 		glfwGetCursorPos(window, &cursor_x, &cursor_y);
+		//cout << "cursor_x: " << cursor_x << "  cursor_y: " << cursor_y << endl;
 
 		UserInterface::Instance().triggerActiveGraphicItemOnClickCallbackAtPoint(cursor_x, cursor_y);
-		//cout << "cursor_x: " << cursor_x << "  cursor_y: " << cursor_y << endl;
+	}
+
+	else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
+		if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::BATTLE) {
+			Battle::Instance().switchBattleFieldScrolling(false);
+		}
 	}
 }
 
-void callback_cursorEnter(GLFWwindow* window, int entered) {
+void callback_cursorEnter(GLFWwindow* window, int entered) { //срабатывает только если курсор покинул или вошёл в окно без нажатых кнопкок
+	//можно этим событием включать и отключать обработку мыши
 	if (!entered) { // The cursor left the content area of the window
-		UserInterface::Instance().setCursorPos(-1, -1);
+		//UserInterface::Instance().setCursorPos(-1, -1);
+
+		/*if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::BATTLE) {
+			Battle::Instance().switchBattleFieldScrolling(false); //отключится и так mouseButton released
+		}*/
 	}
 }
 

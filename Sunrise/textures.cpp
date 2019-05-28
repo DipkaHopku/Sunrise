@@ -169,6 +169,7 @@ void drawScaledTexture(
 void drawTexture(
 	const int xPos, const int yPos,
 	const TextureName textureName,
+	const bool isActived,
 	const TextureScalingByHeightRatioType scalingByHeightRatioType, // = TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR,
 	const float scalingHeightFactor // = 1
 ) {
