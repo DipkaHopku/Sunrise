@@ -192,8 +192,7 @@ void UserInterface::getWindowSize(int* width, int* height) const {
 	*height = _windowHeight;
 }
 
-//TODO сюда может попадать текстура не только кнопки, но сложной фигуры. надо изменить аргументы
-void UserInterface::setActiveGraphicItemControlField(int xPos, int width, int yPos, int height, ActiveGraphicItem* activeUIItem) {
+void UserInterface::setActiveGraphicItemQuadControlField(int xPos, int width, int yPos, int height, ActiveGraphicItem* activeUIItem) {
 	//костыль изза отсутсвия появления скрола при размерах контейнера больше размеров окна
 	//работает замечательно. пиксель в пиксель
 	for (int x = xPos; (x < xPos + width) && (x < _windowWidth); x++) {
@@ -207,6 +206,57 @@ void UserInterface::setActiveGraphicItemControlField(int xPos, int width, int yP
 		}
 	}*/
 }
+
+/*
+arguments:
+#1 - xPos,
+#2 - textureWidth,
+#3 - yPos,
+#4 - textureHeight,
+#5 - textureControlField,
+#6 - activeUIItem
+*/
+void UserInterface::setActiveGraphicItemTextureControlField(
+	int xPos, int textureWidth,
+	int yPos, int textureHeight,
+	bool** const textureControlField, //должен освобождаться
+	ActiveGraphicItem* activeUIItem
+) {
+	//for (int x = xPos; (x < xPos + textureWidth) && (x < _windowWidth); x++) {
+		//for (int y = yPos; (y < yPos + textureHeight) && (y < _windowHeight); y++) {
+	int _xPos = xPos;
+	int _yPos = yPos;
+	if (_xPos < 0) _xPos = 0;
+	if (_yPos < 0) _yPos = 0;
+
+	for (int x = _xPos; (x < xPos + textureWidth) && (x < _windowWidth); x++) {
+		for (int y = _yPos; (y < yPos + textureHeight) && (y < _windowHeight); y++) {
+			if (textureControlField[x - xPos][y - yPos] == true) {
+				_controlField[x][y] = activeUIItem;
+			}
+		}
+	}
+
+	for (int x = 0; x < textureWidth; x++) {
+		delete[] textureControlField[x];
+	}
+	delete[] textureControlField;
+}
+
+/*void UserInterface::setActiveGraphicItemTextureControlField(int xPos, int yPos, TextureName textureName, ActiveGraphicItem* activeUIItem) {
+	int _textureWidth, _textureHeight;
+	getTextureProperties(textureName, &_textureWidth, &_textureHeight);
+
+	bool** const _textureControlField = getTextureControlField(textureName);
+
+	for (int x = xPos; (x < xPos + _textureWidth) && (x < _windowWidth); x++) {
+		for (int y = yPos; (y < yPos + _textureHeight) && (y < _windowHeight); y++) {
+			if (_textureControlField[x - xPos][y - yPos] == true) {
+				_controlField[x][y] = activeUIItem;
+			}
+		}
+	}
+}*/
 
 void UserInterface::triggerActiveGraphicItemOnClickCallbackAtPoint(int xPos, int yPos) {
 	ActiveGraphicItem* activeGraphicItem = _controlField[xPos][yPos];
@@ -721,7 +771,7 @@ private:
 	//int** _charsLocation;
 
 	void drawUIItem() const {
-		UserInterface::Instance().setActiveGraphicItemControlField(_xPos, _width, _yPos, _height, (ActiveGraphicItem*)this);
+		UserInterface::Instance().setActiveGraphicItemQuadControlField(_xPos, _width, _yPos, _height, (ActiveGraphicItem*)this);
 
 		/*glColor4fv(BUTTON_COLOR_RGB);
 		glBegin(GL_QUADS);
@@ -739,7 +789,7 @@ private:
 			glEnable(GL_STENCIL_TEST);
 
 			//не рисуем в этой области
-			// что делать если не тест не пройдер; тест трафарета пройден, но тест глубины - нет; и тест трафарета и глубины - пройден
+			// что делать если не тест не пройден; тест трафарета пройден, но тест глубины - нет; и тест трафарета и глубины - пройден
 			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 			glStencilFunc(GL_ALWAYS, 1, 255);
 
@@ -901,7 +951,7 @@ private:
 	bool _condition = true;
 
 	void drawUIItem() const {
-		UserInterface::Instance().setActiveGraphicItemControlField(_xPos, _width, _yPos, _height, (ActiveGraphicItem*)this);
+		UserInterface::Instance().setActiveGraphicItemQuadControlField(_xPos, _width, _yPos, _height, (ActiveGraphicItem*)this);
 
 		//int _lineWidth = _height / 7 + (1 - (_height / 7) % 2); //_lineWidth всегда нечётное
 		//if (_lineWidth > 6) _lineWidth = 6; //у линей есть предел ширины в 10 пикселей

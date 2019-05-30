@@ -3,9 +3,12 @@
 #include <map>
 #include <iostream>
 #include <ctime>
+#include <utility>
 
 #include "userInterface.h"
 #include "textures.h"
+
+using std::swap;
 
 enum class BiomeType {
 	GRASS,
@@ -17,6 +20,12 @@ enum class BiomeType {
 	NONE
 };
 
+enum class UnitType {
+	WIZARD
+};
+
+class Unit;
+
 class BattleField;
 
 //---------------------------------------------------------------------------------------------
@@ -27,6 +36,9 @@ private:
 	//bool _isScrollingEnabled = false;
 
 	BattleField* _battleField = nullptr;
+	vector<Unit*> _units;
+
+	int _turn;
 
 	Battle();
 	~Battle();
@@ -48,4 +60,19 @@ public:
 	void switchBattleFieldScrolling(bool scrollingState);
 
 	void updateBattleFieldAfterWindowResize();
+
+	/*Unit* const getUnitByIndex(int index) const {
+		if (index < _units.size()) {
+			return _units[index];
+		}
+		else {
+			return nullptr;
+		}
+	}*/
+
+	void sortUnitsByBacklightsDrawOrder();
+
+	void drawUnitBacklights();
+
+	void spawnUnit();
 };

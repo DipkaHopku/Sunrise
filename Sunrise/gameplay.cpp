@@ -32,7 +32,7 @@ void gameplayProcessing() {
 		break;
 
 	case ApplicationState::MAIN_MENU :
-		drawTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, false, 
+		drawTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, nullptr, 
 			TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
 		//drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
 		//drawScaledTexture(0, 0, TextureName::WTF_CAT, TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1);
@@ -67,7 +67,7 @@ void gameplayProcessing() {
 		break;
 
 	case ApplicationState::OPTIONS:
-		drawTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, false,
+		drawTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, nullptr,
 			TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
 		//drawScaledTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
 		break;

@@ -18,7 +18,8 @@ const map<const TextureName, const string> textureFilenames = {
 	{TextureName::BUSH, "resources/textures/bush.png"},
 	{TextureName::PINE, "resources/textures/pine.png"},
 	{TextureName::SMALL_STONE, "resources/textures/smallStone.png"},
-	{TextureName::SHADOW, "resources/textures/shadow.png"}
+	{TextureName::SHADOW, "resources/textures/shadow.png"},
+	{TextureName::WIZARD, "resources/textures/wizard.png"}
 };
 
 class TextureProperties {
@@ -169,9 +170,13 @@ void drawScaledTexture(
 void drawTexture(
 	const int xPos, const int yPos,
 	const TextureName textureName,
-	const bool isActived,
+	ActiveGraphicItem* activeGraphicItem,
+	//const bool isActived,
 	const TextureScalingByHeightRatioType scalingByHeightRatioType, // = TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR,
-	const float scalingHeightFactor // = 1
+	const float scalingHeightFactor, // = 1
+	const bool flipHorizontal,
+	const bool flipVertical,
+	float transparency
 ) {
 	auto _textureData = texturesData.find(textureName);
 	if (_textureData != texturesData.end()) {
@@ -197,7 +202,25 @@ void drawTexture(
 			break;
 		}
 
-		glColor4f(1, 1, 1, 1); //чтобы текстура имела натуральный цвет
+		int leftTexCoord = 0;
+		int rightTexCoord = 1;
+		int topTexCoord = 0;
+		int bottomTexCoord = 1;
+
+		if (flipHorizontal) {
+			leftTexCoord = 1;
+			rightTexCoord = 0;
+		}
+
+		if (flipVertical) {
+			int topTexCoord = 1;
+			int bottomTexCoord = 0;
+		}
+
+		if (transparency < 0) transparency = 0;
+		if (transparency > 1) transparency = 1;
+
+		glColor4f(1, 1, 1, transparency); //чтобы текстура имела натуральный цвет
 
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
@@ -206,14 +229,38 @@ void drawTexture(
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении //NEAREST - по ближайшему пикселю
 
 		glBegin(GL_QUADS);
-		glTexCoord2i(0, 0); glVertex2i(xPos, yPos);
-		glTexCoord2i(1, 0); glVertex2i(xPos + _width, yPos);
-		glTexCoord2i(1, 1); glVertex2i(xPos + _width, yPos + _height);
-		glTexCoord2i(0, 1); glVertex2i(xPos, yPos + _height);
+		glTexCoord2i(leftTexCoord,	topTexCoord);		glVertex2i(xPos,			yPos);
+		glTexCoord2i(rightTexCoord, topTexCoord);		glVertex2i(xPos + _width,	yPos);
+		glTexCoord2i(rightTexCoord, bottomTexCoord);	glVertex2i(xPos + _width,	yPos + _height);
+		glTexCoord2i(leftTexCoord,	bottomTexCoord);	glVertex2i(xPos,			yPos + _height);
 		glEnd();
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
+
+		if (activeGraphicItem != nullptr) {
+			bool** _textureControlField = new bool*[_width];
+			for (int x = 0; x < _width; x++) {
+				_textureControlField[x] = new bool[_height];
+			}
+
+			if (_ratio == 1) {
+				for (int x = 0; x < _width; x++) {
+					for (int y = 0; y < _height; y++) {
+						int _x = x, _y = y;
+						if (flipHorizontal) _x = _width - 1 - x;
+						if (flipVertical)	_y = _height - 1 - y;
+						_textureControlField[x][y] = _textureProperties.controlField[_x][_y];
+					}
+				}
+
+				UserInterface::Instance().setActiveGraphicItemTextureControlField(xPos, _width, yPos, _height, _textureControlField, activeGraphicItem);
+			}
+			else {
+				//создание массива с учётом скейла и отправка в UserInterface //TODO
+				//UserInterface::Instance().setActiveGraphicItemTextureControlField(xPos, yPos, int, int, bool** const, ActiveGraphicItem*)
+			}
+		}
 	}
 }
 
@@ -231,6 +278,16 @@ void getTextureProperties(TextureName textureName, int* width, int* height) {
 }
 
 
+
+/*bool** const getTextureControlField(TextureName textureName) {
+	auto _textureData = texturesData.find(textureName);
+	if (_textureData != texturesData.end()) {
+		return _textureData->second.controlField;
+	}
+	else {
+		return nullptr;
+	}
+}*/
 
 /*void _drawTextureWithDepth(const int xPos, const int yPos, int zPos, const TextureName textureName) {
 	auto _textureData = texturesData.find(textureName);

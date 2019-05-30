@@ -204,7 +204,22 @@ public:
 	//#3 - yPos of active graphic item top side
 	//#4 - height of active graphic item
 	//#5 - active graphic item pointer
-	void setActiveGraphicItemControlField(int, int, int, int, ActiveGraphicItem*);
+	//#6 - flip horizontal
+	//#5 - flip vertical
+	void setActiveGraphicItemQuadControlField(int, int, int, int, ActiveGraphicItem*);
+
+	/*
+	arguments:
+	#1 - xPos, 
+	#2 - textureWidth, 
+	#3 - yPos,
+	#4 - textureHeight, 
+	#5 - textureControlField, 
+	#6 - activeUIItem
+	*/
+	void setActiveGraphicItemTextureControlField(int, int, int, int, bool** const, ActiveGraphicItem*);
+
+	//void setActiveGraphicItemTextureControlField(int, int, TextureName, ActiveGraphicItem*);
 
 	void triggerActiveGraphicItemOnClickCallbackAtPoint(int, int);
 

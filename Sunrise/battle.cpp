@@ -67,14 +67,193 @@ const map<const BiomeType, const BiomeProperties> biomesData = {
 	{BiomeType::PINE, BiomeProperties(TextureName::GRASS, true, true, TextureName::PINE)}
 };
 
-
-
 /*const map<const BiomeType, const BiomeProperties> biomesData = {
 	{BiomeType::GRASS, BiomeProperties(TextureName::GRASS)},
 	{BiomeType::STONE, BiomeProperties(TextureName::STONE, false, false, BiomeType::GRASS)},
 	{BiomeType::BUSH, BiomeProperties(TextureName::BUSH, true, false, BiomeType::GRASS)},
 	{BiomeType::TREE, BiomeProperties(TextureName::STONE, false, false, BiomeType::GRASS)},
 };*/
+
+
+
+const map<const UnitType, const TextureName> unitTypesData = {
+	{UnitType::WIZARD, TextureName::WIZARD}
+};
+
+
+
+//---------------------------------------------------------------------------------------------
+//class Unit definition
+
+class Unit : ActiveGraphicItem {
+private:
+	//унаследованное
+	//bool _mouseOver = false;
+	//void(*_onClickCallback)();
+	UnitType _unitType;
+	bool _isLookRight;
+	int _player;
+
+	//Cell* _cell;
+	//const _textureName;
+
+protected:
+	//унаследованное
+	//int _xPos = 0, _yPos = 0;
+
+public:
+	//унаследованное
+	//virtual void onClick() const = 0;
+	//virtual void onMouseOver(bool);
+
+	Unit(int xPos, int yPos, bool isLookRight, int player) {
+		_xPos = xPos;
+		_yPos = yPos;
+		_isLookRight = isLookRight;
+		_player = player;
+	}
+
+	//требует координаты верхнего левого угла ячейки, в которой надо рисовать юнит
+	void draw(int xPixelPos, int yPixelPos) {
+		auto _unitTypeData = unitTypesData.find(_unitType); //возможно дорого по ресурсам
+		if (_unitTypeData != unitTypesData.end()) {
+			TextureName _textureName = _unitTypeData->second;
+
+			int _textureWidth, _textureHeight;
+			getTextureProperties(_textureName, &_textureWidth, &_textureHeight);
+
+			int _xPixelPos = xPixelPos + (CELL_WIDTH - _textureWidth) / 2;
+			int _yPixelPos = yPixelPos - _textureHeight + CELL_HEIGHT * 0.625;
+
+			drawTexture(_xPixelPos, _yPixelPos,
+				_textureName, (ActiveGraphicItem*)this,
+				TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
+				!_isLookRight
+			);
+
+			//UserInterface::Instance().setActiveGraphicItemTextureControlField(_xPixelPos, _yPixelPos, _textureName, (ActiveGraphicItem*)this);
+		}
+	}
+
+	//требует координаты верхнего левого угла battleField
+	void drawBacklight(const int xPixelPos, const int yPixelPos) {
+		auto _unitTypeData = unitTypesData.find(_unitType);
+		if (_unitTypeData != unitTypesData.end()) {
+			//получение позиции ячейки
+			int _xPixelPos = 0, _yPixelPos = 0;
+			_xPixelPos = xPixelPos + _xPos * (CELL_WIDTH * 0.75);
+			if (_xPos % 2 == 0) { //чётный столбец
+				_yPixelPos = yPixelPos + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
+			}
+			else { //нечётный стобец
+				_yPixelPos = yPixelPos + _yPos * CELL_HEIGHT;
+			}
+
+			//получение позиции юнита
+			TextureName _textureName = _unitTypeData->second;
+
+			int _textureWidth, _textureHeight;
+			getTextureProperties(_textureName, &_textureWidth, &_textureHeight);
+
+			_xPixelPos += (CELL_WIDTH - _textureWidth) / 2;
+			_yPixelPos += - _textureHeight + CELL_HEIGHT * 0.625;
+
+			//обводочка при наведении/выделении
+			int _borderWidth = 4;
+			if (_mouseOver) {
+				float _widthFactor = (float)(_textureWidth + _borderWidth) / _textureWidth;
+				float _heightFactor = (float)(_textureHeight + _borderWidth) / _textureHeight;
+
+				//glEnable(GL_ALPHA_TEST);
+				//glAlphaFunc(GL_NOTEQUAL, 0);
+
+				//glEnable(GL_STENCIL_TEST);
+
+				//рисуем только в этой области
+				glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+				glStencilFunc(GL_NEVER, 2, 255);
+
+				//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+
+				//граница справа
+				drawTexture(_xPixelPos, _yPixelPos - ((float)_textureHeight * _widthFactor - _textureHeight) / 2,
+					_textureName, nullptr,
+					TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, _widthFactor,
+					!_isLookRight
+				);
+
+				//граница слево
+				drawTexture(_xPixelPos - _borderWidth, _yPixelPos - ((float)_textureHeight * _widthFactor - _textureHeight) / 2,
+					_textureName, nullptr,
+					TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, _widthFactor,
+					!_isLookRight
+				);
+
+				//граница снизу
+				drawTexture(_xPixelPos - ((float)_textureWidth * _heightFactor - _textureWidth) / 2, _yPixelPos ,
+					_textureName, nullptr,
+					TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, _heightFactor,
+					!_isLookRight
+				);
+
+				//граница сверху
+				drawTexture(_xPixelPos - ((float)_textureWidth * _heightFactor - _textureWidth) / 2, _yPixelPos - _borderWidth,
+					_textureName, nullptr,
+					TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, _heightFactor,
+					!_isLookRight
+				);
+
+				//glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+				//вырезаем эту область
+				//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				//glStencilFunc(GL_ALWAYS, 3, 255);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				glStencilFunc(GL_NOTEQUAL, 1, 255);
+			}
+
+			glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA); //вынесено в вызывающую функцию
+			drawTexture(_xPixelPos, _yPixelPos,
+				_textureName, nullptr,
+				TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
+				!_isLookRight, false, 0.45
+			);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			if (_mouseOver) {
+				//закрашиваем полученную область
+				glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+				glStencilFunc(GL_EQUAL, 2, 255);
+
+				glColor4fv(BUTTON_FONT_COLOR_RGB);
+				glBegin(GL_QUADS);
+				glVertex2i(_xPixelPos - _borderWidth, _yPixelPos - _borderWidth);
+				glVertex2i(_xPixelPos + _borderWidth + _textureWidth, _yPixelPos - _borderWidth);
+				glVertex2i(_xPixelPos + _borderWidth + _textureWidth, _yPixelPos + _borderWidth + _textureHeight);
+				glVertex2i(_xPixelPos - _borderWidth, _yPixelPos + _borderWidth + _textureHeight);
+				glEnd();
+
+				//glDisable(GL_STENCIL_TEST);
+
+				//glDisable(GL_ALPHA_TEST);
+			}
+		}
+	}
+
+	void onClick() const {
+		//_onClickCallback();
+	}
+
+	void getPosition(int* xPos, int* yPos) {
+		if (xPos != nullptr) *xPos = _xPos;
+		if (yPos != nullptr) *yPos = _yPos;
+	}
+
+	void move() {
+		//_battleField[xPos][yPos].setUnit(nullptr);
+		//_battleField[newxPos][newyPos].setUnit(this);
+	}
+};
 
 
 
@@ -86,25 +265,28 @@ private:
 	const int _xPos, _yPos;
 	//Unit* _unit = nullptr;
 	BiomeType _biome;
+
+	//bool hasUnit = false;
+	Unit* _unit = nullptr;
 public:
 	Cell(int xPos, int yPos, BiomeType biome) : _xPos(xPos), _yPos(yPos) {
 		_biome = biome;
 	}
 
 	void drawSurface(const int xPixels, const int yPixels) const {
-		int _xPixelsPos = 0, _yPixelsPos = 0;
+		int _xPixelPos = 0, _yPixelPos = 0;
 
-		_xPixelsPos = xPixels + _xPos * (CELL_WIDTH * 0.75);
+		_xPixelPos = xPixels + _xPos * (CELL_WIDTH * 0.75);
 
 		if (_xPos % 2 == 0) { //чётный столбец
-			_yPixelsPos = yPixels + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
+			_yPixelPos = yPixels + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
 		} else { //нечётный стобец
-			_yPixelsPos = yPixels + _yPos * CELL_HEIGHT; //на пол клетки выше на экране
+			_yPixelPos = yPixels + _yPos * CELL_HEIGHT; //на пол клетки выше на экране
 		}
 		
 		const TextureName _textureName = biomesData.at(_biome).getTextureName();
 
-		drawTexture(_xPixelsPos, _yPixelsPos, _textureName);
+		drawTexture(_xPixelPos, _yPixelPos, _textureName);
 
 		int _battleFieldWidth, _battleFieldHeight;
 		Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
@@ -124,15 +306,15 @@ public:
 			//слева
 			if (_xPos == LEFT_LAYER_THICKNESS_DECORATING_CELLS) {
 				glBegin(GL_LINES);
-				glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25),	_yPixelsPos);
-				glVertex2i(_xPixelsPos,							_yPixelsPos + (CELL_HEIGHT * 0.5));
+				glVertex2i(_xPixelPos + (CELL_WIDTH * 0.25),	_yPixelPos);
+				glVertex2i(_xPixelPos,							_yPixelPos + (CELL_HEIGHT * 0.5));
 				glEnd();
 			}
 			//справо
 			else if (_xPos == _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 1) {
 				glBegin(GL_LINES);
-				glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75),	_yPixelsPos);
-				glVertex2i(_xPixelsPos + CELL_WIDTH,			_yPixelsPos + (CELL_HEIGHT * 0.5));
+				glVertex2i(_xPixelPos + (CELL_WIDTH * 0.75),	_yPixelPos);
+				glVertex2i(_xPixelPos + CELL_WIDTH,			_yPixelPos + (CELL_HEIGHT * 0.5));
 				glEnd();
 			}
 
@@ -143,38 +325,38 @@ public:
 						|| _xPos == _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 1
 						) { //левый или правый
 						glBegin(GL_LINES);
-						glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos);
-						glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos);
+						glVertex2i(_xPixelPos + (CELL_WIDTH * 0.25), _yPixelPos);
+						glVertex2i(_xPixelPos + (CELL_WIDTH * 0.75), _yPixelPos);
 						glEnd();
 
 						if (_xPos == LEFT_LAYER_THICKNESS_DECORATING_CELLS) { //левый столбец
 							glBegin(GL_LINES);
-							glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos);
-							glVertex2i(_xPixelsPos + CELL_WIDTH, _yPixelsPos - (CELL_HEIGHT * 0.5));
+							glVertex2i(_xPixelPos + (CELL_WIDTH * 0.75), _yPixelPos);
+							glVertex2i(_xPixelPos + CELL_WIDTH, _yPixelPos - (CELL_HEIGHT * 0.5));
 							glEnd();
 						}
 						else { //правый
 							glBegin(GL_LINES);
-							glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos);
-							glVertex2i(_xPixelsPos, _yPixelsPos - (CELL_HEIGHT * 0.5));
+							glVertex2i(_xPixelPos + (CELL_WIDTH * 0.25), _yPixelPos);
+							glVertex2i(_xPixelPos, _yPixelPos - (CELL_HEIGHT * 0.5));
 							glEnd();
 						}
 					}
 					else { //чётные, не крайние стобцы
 						//"верхняя" нижняя обводка
 						glBegin(GL_LINE_STRIP);
-						glVertex2i(_xPixelsPos, _yPixelsPos - (CELL_HEIGHT * 0.5));
-						glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos);
-						glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos);
-						glVertex2i(_xPixelsPos + CELL_WIDTH, _yPixelsPos - (CELL_HEIGHT * 0.5));
+						glVertex2i(_xPixelPos, _yPixelPos - (CELL_HEIGHT * 0.5));
+						glVertex2i(_xPixelPos + (CELL_WIDTH * 0.25), _yPixelPos);
+						glVertex2i(_xPixelPos + (CELL_WIDTH * 0.75), _yPixelPos);
+						glVertex2i(_xPixelPos + CELL_WIDTH, _yPixelPos - (CELL_HEIGHT * 0.5));
 						glEnd();
 					}
 				}
 				else { //нечётные столбцы
 					//линия сверху
 					glBegin(GL_LINES);
-					glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos);
-					glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos);
+					glVertex2i(_xPixelPos + (CELL_WIDTH * 0.25), _yPixelPos);
+					glVertex2i(_xPixelPos + (CELL_WIDTH * 0.75), _yPixelPos);
 					glEnd();
 				}
 			}
@@ -183,40 +365,52 @@ public:
 
 			//нижняя обводка
 			glBegin(GL_LINE_STRIP);
-			glVertex2i(_xPixelsPos, _yPixelsPos + (CELL_HEIGHT * 0.5));
-			glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.25), _yPixelsPos + CELL_HEIGHT);
-			glVertex2i(_xPixelsPos + (CELL_WIDTH * 0.75), _yPixelsPos + CELL_HEIGHT);
-			glVertex2i(_xPixelsPos + CELL_WIDTH, _yPixelsPos + (CELL_HEIGHT * 0.5));
+			glVertex2i(_xPixelPos, _yPixelPos + (CELL_HEIGHT * 0.5));
+			glVertex2i(_xPixelPos + (CELL_WIDTH * 0.25), _yPixelPos + CELL_HEIGHT);
+			glVertex2i(_xPixelPos + (CELL_WIDTH * 0.75), _yPixelPos + CELL_HEIGHT);
+			glVertex2i(_xPixelPos + CELL_WIDTH, _yPixelPos + (CELL_HEIGHT * 0.5));
 			glEnd();
 		}
 	}
 
-	void drawObject(const int xPixels, const int yPixels) const {
+	void drawUnitAndObject(const int xPixels, const int yPixels) const {
 		const TextureName _objectTextureName = biomesData.at(_biome).getObjectTextureName();
-		if (_objectTextureName != TextureName::NONE) {
+		if (_objectTextureName != TextureName::NONE || _unit != nullptr) {
 
-			int _textureWidth = 0, _textureHeight = 0;
-			getTextureProperties(_objectTextureName, &_textureWidth, &_textureHeight);
+			//int _textureWidth = 0, _textureHeight = 0;
+			//getTextureProperties(_objectTextureName, &_textureWidth, &_textureHeight);
 
-			int _xPixelsPos = 0, _yPixelsPos = 0;
-			_xPixelsPos = xPixels + _xPos * (CELL_WIDTH * 0.75);
+			int _xPixelPos = 0, _yPixelPos = 0;
+			_xPixelPos = xPixels + _xPos * (CELL_WIDTH * 0.75);
 			if (_xPos % 2 == 0) { //чётный столбец
-				_yPixelsPos = yPixels + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
+				_yPixelPos = yPixels + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
 			}
 			else { //нечётный стобец
-				_yPixelsPos = yPixels + _yPos * CELL_HEIGHT;
+				_yPixelPos = yPixels + _yPos * CELL_HEIGHT;
 			}
 
 			//тень
-			drawTexture(_xPixelsPos, _yPixelsPos, TextureName::SHADOW);
+			drawTexture(_xPixelPos, _yPixelPos, TextureName::SHADOW);
 
-			//srand(_xPixelsPos * _yPixelsPos) //дял красивого хаоса
-			drawTexture(_xPixelsPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelsPos - _textureHeight + CELL_HEIGHT * 0.75, _objectTextureName);
+			if (_unit != nullptr) {
+				_unit->draw(_xPixelPos, _yPixelPos);
+			}
+
+			if (_objectTextureName != TextureName::NONE) {
+				int _textureWidth = 0, _textureHeight = 0;
+				getTextureProperties(_objectTextureName, &_textureWidth, &_textureHeight);
+				//srand(_xPixelsPos * _yPixelsPos) //дял красивого хаоса
+				drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos - _textureHeight + CELL_HEIGHT * 0.75, _objectTextureName);
+			}
 		}	
 	}
 
 	const BiomeType getBiomeType() const {
 		return _biome;
+	}
+
+	void setUnit(Unit* unit) {
+		_unit = unit;
 	}
 };
 
@@ -257,30 +451,36 @@ private:
 		}
 	}
 	
-	//отрисовка объектов и юнитов(первый раз)
-	void drawCellObjects() const {
+	/*//отрисовка юнитов
+	void drawCellUnits() const {
+		//while(true) {
+		for (int i = 0;;i++) {
+			Unit* const _unit = Battle::Instance().getUnitByIndex(i);
+			if (_unit == nullptr) break;
+
+			_unit->draw(_xPixelPos, _yPixelPos);
+		}
+	}*/
+
+	//отрисовка объектов
+	void drawCellUnitsAndObjects() const {
 		for (int y = 0; y < _height; y++) {
 			for (int x = 0; x < _width; x++) {
-				/*int _y;
-				y < _height / 2 ? _y = y * 2 : _y = (y - _height / 2) * 2 + 1;*/
 				int _x;
 				x < _width / 2 ? _x = x * 2 + 1 : _x = (x - _width / 2) * 2;
-				_battlefield[_x][y]->drawObject(_xPixelPos, _yPixelPos);
-				//_battlefield[x][y]->drawUnit(_xPixels, _yPixels);
+				_battlefield[_x][y]->drawUnitAndObject(_xPixelPos, _yPixelPos);
 			}
 		}
 	}
 
-	//отрисовка юнитов второй раз с прозрачностью для их видимости сквозь препятствия
-	void drawCellUnitBacklight() const {
+	/*//отрисовка юнитов второй раз с прозрачностью для их видимости сквозь препятствия
+	void drawCellUnitBacklights() const {
 		for (int y = 0; y < _height; y++) {
 			for (int x = 0; x < _width; x++) {
-				glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA); //или отдельную функцию для Cell? типа Cell->drawUnitBacklight();
 				//_battlefield[x][y]->drawUnit(_xPixels, _yPixels);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			}
 		}
-	}
+	}*/
 
 public:
 	BattleField() {
@@ -430,7 +630,14 @@ public:
 
 		//отрисовка поля битвы
 		drawCellSurfaces();
-		drawCellObjects();
+
+		//отрисовка объектов(деревьев, кустов...) и юнитов
+		drawCellUnitsAndObjects();
+
+		//отрисовка подсветки (второй раз с прозрачностью) юнитов, чтобы их было видно в кусте, за деревом или камнем
+		//drawCellUnitBacklights();
+		Battle::Instance().drawUnitBacklights();
+		//отрисовка юнитов второй раз с прозрачностью для их видимости сквозь препятствия
 	}
 
 	void switchScrolling(bool scrollingState) {
@@ -456,12 +663,15 @@ public:
 	}
 
 	//void getProperties(int* xPixelPos, int* yPixelPos, int* width, int* height) const {
-	void getProperties(int* width, int* height) const {
-		//if (xPixelPos != nullptr) *xPixelPos = _xPixelPos;
-		//if (yPixelPos != nullptr) *yPixelPos = _yPixelPos;
 
+	void getSize(int* width, int* height) const {
 		if (width != nullptr) *width = _width;
 		if (height != nullptr) *height = _height;
+	}
+
+	void getPosition(int* xPixelPos, int* yPixelPos) {
+		if (xPixelPos != nullptr) *xPixelPos = _xPixelPos;
+		if (yPixelPos != nullptr) *yPixelPos = _yPixelPos;
 	}
 	
 	void updateAfterWindowResize() {
@@ -493,7 +703,11 @@ public:
 		}
 	}
 
-	//передвижение
+	void spawnUnit(Unit* unit) { //TODO
+		int xPos, yPos;
+		unit->getPosition(&xPos, &yPos);
+		_battlefield[xPos][yPos]->setUnit(unit);
+	}
 };
 
 
@@ -512,15 +726,25 @@ Battle& Battle::Instance() {
 void Battle::begin() {
 	if (_battleField == nullptr) { //TODO
 		_battleField = new BattleField();
+		_turn = 0;
+
+		spawnUnit(); //TODO DEBUG
 	}
 }
 
 void Battle::end() {
+	//удаляем поле
 	if (_battleField != nullptr) { //TODO
 		delete _battleField;
 		_battleField = nullptr;
 		switchBattleFieldScrolling(false);
 	}
+
+	//удаляем юнитов
+	for (int i = 0; i < _units.size(); i++) {
+		delete _units[i];
+	}
+	_units.clear();
 }
 
 void Battle::draw() {
@@ -532,7 +756,7 @@ void Battle::draw() {
 
 void Battle::getBattleFieldProperties(int* width, int* height) const {
 	if (_battleField != nullptr) {
-		_battleField->getProperties(width, height);
+		_battleField->getSize(width, height);
 	}
 	else {
 		if (width != nullptr) *width = 0;
@@ -555,14 +779,110 @@ void Battle::updateBattleFieldAfterWindowResize() {
 	}
 }
 
+//тяжёлый алгоритм с большим количеством сравнений, чтений(получением позиций из объектов) и записей, НО ТОЛЬКО после передвижений //альтернатива это перебирать все ячейки по порядку - алгоритм чуток полегче, но зато исполняемый при отрисовке КАЖДОГО кадра
+void Battle::sortUnitsByBacklightsDrawOrder() {
+	//сортируем сначала по yPos
+	for (int i = 0; i < _units.size() - 1; i++) {
+		int priority_yPos;
+		_units[i]->getPosition(nullptr, &priority_yPos);
+		int priority_index = i;
 
+		for (int j = i + 1; j < _units.size(); j++) {
+			int yPos;
+			_units[j]->getPosition(nullptr, &yPos);
 
-//---------------------------------------------------------------------------------------------
-//class Unit definition
+			//если новый найденный элемент имеет yPos больше
+			if (priority_yPos < yPos) {
+				priority_yPos = yPos;
+				priority_index = j;
+			}
 
-class Unit : ActiveGraphicItem {
+			//если новый элемент имеет такую же yPos как и старый тогда сортируем по xPos
+			else if (priority_yPos == yPos) {
+
+				//xPos текущего приоритетного для отрисовки юнита
+				int priority_xPos;
+				_units[priority_index]->getPosition(&priority_xPos, nullptr);
+
+				//xPos кандидата на более высокий приоритет
+				int xPos;
+				_units[j]->getPosition(&xPos, nullptr);
+
+				//чётный xPos имеет приоритет
+				if (priority_xPos % 2 == 1 && xPos % 2 == 0) {
+					priority_yPos = yPos;
+					priority_index = j;
+				}
+
+				//если их чётность совпадает, то между ними большое расстояние и порядок рисовки не имеет значения
+				//если текущий приоритетный юнит имеет чётную xPos, а кандидат нечётную, то ничего менять не надо
+			}
+		}
+
+		if (priority_index != i) {
+			swap(_units[priority_index], _units[i]);
+		}
+	}
+}
+
+void Battle::drawUnitBacklights() {
+	int _xPixelBattleFieldPos, _yPixelBattleFieldPos;
+	_battleField->getPosition(&_xPixelBattleFieldPos, &_yPixelBattleFieldPos);
+
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_NOTEQUAL, 0);
+
+	glEnable(GL_STENCIL_TEST);
+
+	//glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA); //внутри вызываемого метода
+
+	for (int i = 0; i < _units.size(); i++) {
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilFunc(GL_NOTEQUAL, 1, 255);
+
+		_units[i]->drawBacklight(_xPixelBattleFieldPos, _yPixelBattleFieldPos);
+	}
+
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	//можно было бы ещё эти самые просвечивающиеся сквозь объекты фигуры выделять цветом, например белым, но это не то чтобы красиво и при этом весьма геморно
+	/*glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_EQUAL, 1, 255);
+
 	int _xPos = 0, _yPos = 0;
-};
+	int _width = 800, _height = 600;
+	glColor4f(1, 1, 1, 0.1);
+	glBegin(GL_QUADS);
+	glVertex2i(_xPos, _yPos);
+	glVertex2i(_xPos + _width, _yPos);
+	glVertex2i(_xPos + _width, _yPos + _height);
+	glVertex2i(_xPos, _yPos + _height);
+	glEnd();*/
+
+	glDisable(GL_STENCIL_TEST);
+
+	glDisable(GL_ALPHA_TEST);
+}
+
+void Battle::spawnUnit() { //TODO
+	Unit* _unit = new Unit(4, 10, true, 0);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(_unit);
+
+	_unit = new Unit(5, 10, false, 0);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(_unit);
+
+	_unit = new Unit(4, 11, true, 0);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(_unit);
+
+	_unit = new Unit(15, 19, true, 0);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(_unit);
+
+	sortUnitsByBacklightsDrawOrder();
+}
 
 
 
