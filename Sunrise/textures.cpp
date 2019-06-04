@@ -19,7 +19,10 @@ const map<const TextureName, const string> textureFilenames = {
 	{TextureName::PINE, "resources/textures/pine.png"},
 	{TextureName::SMALL_STONE, "resources/textures/smallStone.png"},
 	{TextureName::SHADOW, "resources/textures/shadow.png"},
-	{TextureName::WIZARD, "resources/textures/wizard.png"}
+	{TextureName::WIZARD, "resources/textures/wizard.png"},
+	{TextureName::WIZARD_BORDER, "resources/textures/wizard_border.png"},
+	{TextureName::AVAILABLE_MOVEMENT_MARK, "resources/textures/availableMovementMark.png"},
+	{TextureName::NOT_AVAILABLE_MOVEMENT_MARK, "resources/textures/notAvailableMovementMark.png"}
 };
 
 class TextureProperties {
@@ -39,6 +42,110 @@ public:
 
 //map<TextureName, TextureProperties> texturesData;
 map<TextureName, const TextureProperties> texturesData;
+
+
+//textureControlFieldsCashTable
+
+class TextureControlFieldCashIndex {
+//private:
+public:
+	const TextureName textureName;
+	const float ratio;
+	const bool flipHorizontal;
+	const bool flipVertical;
+
+//public:
+	TextureControlFieldCashIndex(
+		TextureName textureName,
+		float ratio,
+		bool flipHorizontal,
+		bool flipVertical
+	) noexcept : 
+		textureName(textureName),
+		ratio(ratio),
+		flipHorizontal(flipHorizontal),
+		flipVertical(flipVertical)
+	{
+
+	}
+
+	bool operator==(const TextureControlFieldCashIndex& textureControlFieldCashIndex) const {
+		if (this->textureName == textureControlFieldCashIndex.textureName
+			&& this->ratio == textureControlFieldCashIndex.ratio
+			&& this->flipHorizontal == textureControlFieldCashIndex.flipHorizontal
+			&& this->flipVertical == textureControlFieldCashIndex.flipVertical
+			) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	bool operator<(const TextureControlFieldCashIndex& textureControlFieldCashIndex) const {
+		if (this->textureName < textureControlFieldCashIndex.textureName) {
+			return true;
+		}
+		else {
+			if (this->textureName == textureControlFieldCashIndex.textureName) {
+				if (this->ratio < textureControlFieldCashIndex.ratio) {
+					return true;
+				}
+				else {
+					if (this->ratio == textureControlFieldCashIndex.ratio) {
+						if (this->flipHorizontal < textureControlFieldCashIndex.flipHorizontal) {
+							return true;
+						}
+						else {
+							if (this->flipHorizontal == textureControlFieldCashIndex.flipHorizontal) {
+								if (this->flipVertical < textureControlFieldCashIndex.flipVertical) {
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+
+		/*if (this->textureName < textureControlFieldCashIndex.textureName) {
+			return true;
+		}
+
+		else if (this->textureName == textureControlFieldCashIndex.textureName
+			&& this->ratio < textureControlFieldCashIndex.ratio)
+		{
+			return true;
+		}
+
+		else if (this->textureName == textureControlFieldCashIndex.textureName
+			&& this->ratio == textureControlFieldCashIndex.ratio
+			&& this->flipHorizontal < textureControlFieldCashIndex.flipHorizontal)
+		{
+			return true;
+		}
+
+		else if (this->textureName == textureControlFieldCashIndex.textureName
+			&& this->ratio == textureControlFieldCashIndex.ratio
+			&& this->flipHorizontal == textureControlFieldCashIndex.flipHorizontal
+			&& this->flipVertical < textureControlFieldCashIndex.flipVertical)
+		{
+			return true;
+		}
+
+		else {
+			return false;
+		}*/
+	}
+
+	/*size_t operator()(const Name &name) const {
+		return hash<string>()(name.first) ^ hash<string>()(name.second);
+	}*/	
+};
+
+map<const TextureControlFieldCashIndex, bool** const> textureControlFieldsCashTable;
 
 //---------------------------------------------------------------------------------------------
 //functions
@@ -166,6 +273,95 @@ void drawScaledTexture(
 }*/
 
 
+//чтобы не было дублирвоания кода
+void _getTextureRatioAndSize(
+	TextureProperties textureProperties,
+	TextureScalingByHeightRatioType scalingByHeightRatioType,
+	float scalingHeightFactor,
+	float* ratio, int* width, int* height
+) {
+	float _ratio = 0;
+	int _width = 0, _height = 0;
+		
+	switch (scalingByHeightRatioType) {
+	case TextureScalingByHeightRatioType::PIXELS_NUMBER:
+		_height = scalingHeightFactor;
+		_ratio = (float)_height / textureProperties.height;
+		_width = textureProperties.width * _ratio;
+		break;
+	case TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR:
+		_ratio = scalingHeightFactor;
+		_height = textureProperties.height * _ratio;
+		_width = textureProperties.width * _ratio;
+		break;
+	default: //никогда не заходит?
+		cerr << "Error: Unknown ratio type of texture scaling by height" << endl;
+		return;
+		break;
+	}
+
+	if (ratio != nullptr) *ratio = _ratio;
+	if (width != nullptr) *width = _width;
+	if (height != nullptr) *height = _height;
+}
+
+
+
+bool** const _getTextureControlField(
+	TextureName textureName,
+	int textureWidth,
+	int textureHeight,
+	bool** textureOriginalControlField,
+	float ratio,
+	bool flipHorizontal,
+	bool flipVertical
+) {
+	bool** _textureControlField;
+
+	//ключ для поиска
+	TextureControlFieldCashIndex _textureControlFieldCashIndex(
+		textureName,
+		ratio,
+		flipHorizontal,
+		flipVertical
+	);
+
+	auto _textureControlFieldCashTable = textureControlFieldsCashTable.find(_textureControlFieldCashIndex);
+	//значение ключа найдено в кеше
+	if (_textureControlFieldCashTable != textureControlFieldsCashTable.end()) {
+		_textureControlField = _textureControlFieldCashTable->second;
+	}
+	//значение ключа не найдено
+	else {
+		//..значит его надо сгенерировать и добавить в кеш
+		_textureControlField = new bool*[textureWidth];
+		for (int x = 0; x < textureWidth; x++) {
+			_textureControlField[x] = new bool[textureHeight];
+		}
+
+		//текстура стандартного размера
+		if (ratio == 1) {
+			for (int x = 0; x < textureWidth; x++) {
+				for (int y = 0; y < textureHeight; y++) {
+					int _x = x, _y = y;
+					if (flipHorizontal) _x = textureWidth - 1 - x;
+					if (flipVertical)	_y = textureHeight - 1 - y;
+					_textureControlField[x][y] = textureOriginalControlField[_x][_y];
+				}
+			}
+		}
+		//текстура нестандартного размера
+		else {
+			//создание массива с учётом скейла и отправка в UserInterface //TODO
+		}
+
+		//добавляем в кеш
+		textureControlFieldsCashTable.insert(pair<TextureControlFieldCashIndex, bool** const>(_textureControlFieldCashIndex, _textureControlField));
+	}
+	return _textureControlField;
+}
+
+
 
 void drawTexture(
 	const int xPos, const int yPos,
@@ -182,10 +378,16 @@ void drawTexture(
 	if (_textureData != texturesData.end()) {
 		TextureProperties _textureProperties = _textureData->second;
 
-		int _width, _height;
 		float _ratio;
+		int _width, _height;
+		
+		_getTextureRatioAndSize(
+			_textureProperties,
+			scalingByHeightRatioType,
+			scalingHeightFactor,
+			&_ratio, &_width, &_height);
 
-		switch (scalingByHeightRatioType) {
+		/*switch (scalingByHeightRatioType) {
 		case TextureScalingByHeightRatioType::PIXELS_NUMBER:
 			_height = scalingHeightFactor;
 			_ratio = (float)_height / _textureProperties.height;
@@ -200,7 +402,7 @@ void drawTexture(
 			cerr << "Error: Unknown ratio type of texture scaling by height" << endl;
 			return;
 			break;
-		}
+		}*/
 
 		int leftTexCoord = 0;
 		int rightTexCoord = 1;
@@ -239,27 +441,61 @@ void drawTexture(
 		glDisable(GL_TEXTURE_2D);
 
 		if (activeGraphicItem != nullptr) {
-			bool** _textureControlField = new bool*[_width];
-			for (int x = 0; x < _width; x++) {
-				_textureControlField[x] = new bool[_height];
-			}
+			/*bool** _textureControlField;
 
-			if (_ratio == 1) {
+			//ключ для поиска
+			TextureControlFieldCashIndex _textureControlFieldCashIndex(
+				textureName,
+				_ratio,
+				flipHorizontal,
+				flipVertical
+			);
+
+			auto _textureControlFieldCashTable = textureControlFieldsCashTable.find(_textureControlFieldCashIndex);
+			//значение ключа найдено в кеше
+			if (_textureControlFieldCashTable != textureControlFieldsCashTable.end()) {
+				_textureControlField = _textureControlFieldCashTable->second;
+			}
+			//значение ключа не найдено
+			else {
+				//..значит его надо сгенерировать и добавить в кеш
+				_textureControlField = new bool*[_width];
 				for (int x = 0; x < _width; x++) {
-					for (int y = 0; y < _height; y++) {
-						int _x = x, _y = y;
-						if (flipHorizontal) _x = _width - 1 - x;
-						if (flipVertical)	_y = _height - 1 - y;
-						_textureControlField[x][y] = _textureProperties.controlField[_x][_y];
-					}
+					_textureControlField[x] = new bool[_height];
 				}
 
-				UserInterface::Instance().setActiveGraphicItemTextureControlField(xPos, _width, yPos, _height, _textureControlField, activeGraphicItem);
-			}
-			else {
-				//создание массива с учётом скейла и отправка в UserInterface //TODO
-				//UserInterface::Instance().setActiveGraphicItemTextureControlField(xPos, yPos, int, int, bool** const, ActiveGraphicItem*)
-			}
+				//текстура стандартного размера
+				if (_ratio == 1) {
+					for (int x = 0; x < _width; x++) {
+						for (int y = 0; y < _height; y++) {
+							int _x = x, _y = y;
+							if (flipHorizontal) _x = _width - 1 - x;
+							if (flipVertical)	_y = _height - 1 - y;
+							_textureControlField[x][y] = _textureProperties.controlField[_x][_y];
+						}
+					}
+				}
+				//текстура нестандартного размера
+				else {
+					//создание массива с учётом скейла и отправка в UserInterface //TODO
+				}
+
+				//добавляем в кеш
+				textureControlFieldsCashTable.insert(pair<TextureControlFieldCashIndex, bool** const>(_textureControlFieldCashIndex, _textureControlField));
+			}*/
+
+			bool** const _textureControlField = _getTextureControlField(
+				textureName,
+				_width,
+				_height,
+				_textureProperties.controlField,
+				_ratio,
+				flipHorizontal,
+				flipVertical
+			);
+
+			//рисуем активную область
+			UserInterface::Instance().setActiveGraphicItemTextureControlField(xPos, _width, yPos, _height, _textureControlField, activeGraphicItem);
 		}
 	}
 }
@@ -279,15 +515,52 @@ void getTextureProperties(TextureName textureName, int* width, int* height) {
 
 
 
-/*bool** const getTextureControlField(TextureName textureName) {
+bool** const getTextureControlField(
+	TextureName textureName, 
+	const TextureScalingByHeightRatioType scalingByHeightRatioType,
+	const float scalingHeightFactor,
+	bool flipHorizontal, 
+	bool flipVertical
+) {
 	auto _textureData = texturesData.find(textureName);
+	if (_textureData != texturesData.end()) {
+		TextureProperties _textureProperties = _textureData->second;
+
+		float _ratio;
+		int _width, _height;
+
+		_getTextureRatioAndSize(
+			_textureProperties,
+			scalingByHeightRatioType,
+			scalingHeightFactor,
+			&_ratio, &_width, &_height);
+
+		bool** const _textureControlField = _getTextureControlField(
+			textureName,
+			_width,
+			_height,
+			_textureProperties.controlField,
+			_ratio,
+			flipHorizontal,
+			flipVertical
+		);
+		
+		return _textureControlField;
+	}
+	//текстура не найдена
+	else {
+		return nullptr;
+	}
+
+
+	/*auto _textureData = texturesData.find(textureName);
 	if (_textureData != texturesData.end()) {
 		return _textureData->second.controlField;
 	}
 	else {
 		return nullptr;
-	}
-}*/
+	}*/
+}
 
 /*void _drawTextureWithDepth(const int xPos, const int yPos, int zPos, const TextureName textureName) {
 	auto _textureData = texturesData.find(textureName);

@@ -42,6 +42,9 @@ enum class TextureName {
 	SMALL_STONE,
 	SHADOW,
 	WIZARD,
+	WIZARD_BORDER,
+	AVAILABLE_MOVEMENT_MARK,
+	NOT_AVAILABLE_MOVEMENT_MARK,
 	NONE //"пустая" текстура
 };
 
@@ -95,7 +98,22 @@ arguments:
 */
 void getTextureProperties(TextureName, int*, int*);
 
-//bool** const getTextureControlField(TextureName);
+/*
+Нельзя удалять полученный двумерный массив
+arguments:
+#1 - textureName,
+#2 - textureScalingByHeightRatioType,
+#3 - scalingHeightFactor,
+#4 - flipHorizontal,
+#5 - flipVertical
+*/
+bool** const getTextureControlField(
+	TextureName,
+	TextureScalingByHeightRatioType,
+	float,
+	bool,
+	bool
+);
 
 //Texture mergeTextures(struct[](idTexture, xpos, ypos) //чтобы не рисовать заново поля каждый раз
 

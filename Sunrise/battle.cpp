@@ -1,5 +1,11 @@
 #include "battle.h"
 
+const map<const TextureName, const TextureName> textureBorders = {
+	{TextureName::WIZARD, TextureName::WIZARD_BORDER}
+};
+
+
+
 //вообще то эти значения надо получать из соответсвующей текстуры, но... ок
 const int CELL_WIDTH = 128;
 const int CELL_HEIGHT = 64;
@@ -8,6 +14,11 @@ const int TOP_LAYER_THICKNESS_DECORATING_CELLS = 4;
 const int BOTTOM_LAYER_THICKNESS_DECORATING_CELLS = 2;
 const int LEFT_LAYER_THICKNESS_DECORATING_CELLS = 2;
 const int RIGHT_LAYER_THICKNESS_DECORATING_CELLS = 2;
+
+const float PLAYER_COLOR_RGB[4] = { 0.235, 0.75, 0.235, 1 };
+const float ENEMY_COLOR_RGB[4] = { 0.75, 0.235, 0.235, 1 };
+
+//class Cell;
 
 
 
@@ -52,6 +63,10 @@ public:
 		return _objectTextureName;
 	}
 
+	bool getPassability() const {
+		return _isPassable;
+	}
+
 	/*BiomeType getBaseBiome() const {
 		return _baseBiome;
 	}*/
@@ -85,14 +100,15 @@ const map<const UnitType, const TextureName> unitTypesData = {
 //---------------------------------------------------------------------------------------------
 //class Unit definition
 
-class Unit : ActiveGraphicItem {
+class Unit : public ActiveGraphicItem {
 private:
 	//унаследованное
 	//bool _mouseOver = false;
 	//void(*_onClickCallback)();
 	UnitType _unitType;
 	bool _isLookRight;
-	int _player;
+	unsigned int _player;
+	//bool _isChoosen = false;
 
 	//Cell* _cell;
 	//const _textureName;
@@ -106,15 +122,20 @@ public:
 	//virtual void onClick() const = 0;
 	//virtual void onMouseOver(bool);
 
-	Unit(int xPos, int yPos, bool isLookRight, int player) {
+	Unit(UnitType unitType, int player) {
+		_unitType = unitType;
+		_player = player;
+	}
+
+	/*Unit(int xPos, int yPos, bool isLookRight, int player) {
 		_xPos = xPos;
 		_yPos = yPos;
 		_isLookRight = isLookRight;
 		_player = player;
-	}
+	}*/
 
 	//требует координаты верхнего левого угла ячейки, в которой надо рисовать юнит
-	void draw(int xPixelPos, int yPixelPos) {
+	void draw(int xPixelPos, int yPixelPos) const {
 		auto _unitTypeData = unitTypesData.find(_unitType); //возможно дорого по ресурсам
 		if (_unitTypeData != unitTypesData.end()) {
 			TextureName _textureName = _unitTypeData->second;
@@ -136,7 +157,7 @@ public:
 	}
 
 	//требует координаты верхнего левого угла battleField
-	void drawBacklight(const int xPixelPos, const int yPixelPos) {
+	void drawBacklight(const int xPixelPos, const int yPixelPos) const {
 		auto _unitTypeData = unitTypesData.find(_unitType);
 		if (_unitTypeData != unitTypesData.end()) {
 			//получение позиции ячейки
@@ -158,7 +179,7 @@ public:
 			_xPixelPos += (CELL_WIDTH - _textureWidth) / 2;
 			_yPixelPos += - _textureHeight + CELL_HEIGHT * 0.625;
 
-			//обводочка при наведении/выделении
+			/*//обводочка при наведении/выделении
 			int _borderWidth = 4;
 			if (_mouseOver) {
 				float _widthFactor = (float)(_textureWidth + _borderWidth) / _textureWidth;
@@ -210,7 +231,15 @@ public:
 				//glStencilFunc(GL_ALWAYS, 3, 255);
 				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 				glStencilFunc(GL_NOTEQUAL, 1, 255);
-			}
+			}*/
+
+			/*glEnable(GL_ALPHA_TEST);
+			glAlphaFunc(GL_NOTEQUAL, 0);
+
+			glEnable(GL_STENCIL_TEST);
+
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			glStencilFunc(GL_NOTEQUAL, 1, 255);
 
 			glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA); //вынесено в вызывающую функцию
 			drawTexture(_xPixelPos, _yPixelPos,
@@ -220,7 +249,11 @@ public:
 			);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			if (_mouseOver) {
+			glDisable(GL_STENCIL_TEST);
+
+			glDisable(GL_ALPHA_TEST);*/
+
+			/*if (_mouseOver) {
 				//закрашиваем полученную область
 				glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 				glStencilFunc(GL_EQUAL, 2, 255);
@@ -236,23 +269,178 @@ public:
 				//glDisable(GL_STENCIL_TEST);
 
 				//glDisable(GL_ALPHA_TEST);
+			}*/
+			
+			const bool _isChosen = this == Battle::Instance().getChosenUnit();
+
+			//обводочка при наведении/выделении
+			if (_isChosen || _mouseOver) {
+				auto textureBorder = textureBorders.find(_textureName);
+				if (textureBorder != textureBorders.end()) {
+					TextureName _textureBorderName = textureBorder->second;
+
+					int _textureBorderWidth, _textureBorderHeight;
+					getTextureProperties(_textureBorderName, &_textureBorderWidth, &_textureBorderHeight);
+
+					int _xBorderPixelPos = _xPixelPos - (_textureBorderWidth - _textureWidth) / 2;
+					int _yBorderPixelPos = _yPixelPos - (_textureBorderHeight - _textureHeight) / 2;
+
+					glEnable(GL_ALPHA_TEST);
+					glAlphaFunc(GL_NOTEQUAL, 0);
+
+					glEnable(GL_STENCIL_TEST);
+
+					glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+					glStencilFunc(GL_NOTEQUAL, 255, 255);
+
+					//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					//glStencilFunc(GL_ALWAYS, 2, 255);
+
+					/*if (_isChosen) {
+						glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+						glStencilFunc(GL_ALWAYS, 127, 255);
+					}
+					else { //_mouseOver
+						glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+						glStencilFunc(GL_NOTEQUAL, 255, 255);
+					}*/
+
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+					//рисую обводку
+					drawTexture(_xBorderPixelPos, _yBorderPixelPos,
+						_textureBorderName, nullptr,
+						TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
+						!_isLookRight, false, 1
+					);
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+					glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+					if (_isChosen) {
+						//glStencilFunc(GL_EQUAL, 127, 255);
+						glStencilFunc(GL_EQUAL, 1, 255);
+						glColor4f(1, 1, 1, 1);
+					}
+					else {
+						glStencilFunc(GL_EQUAL, 1, 255);
+						//glStencilFunc(GL_EQUAL, 1, 0);
+						//if (_player == 0) glColor4f(0.235, 0.75, 0.235, 1);
+						//else glColor4f(0.75, 0.235, 0.235, 1);
+						if (_player == 0) glColor4fv(PLAYER_COLOR_RGB);
+						else glColor4fv(ENEMY_COLOR_RGB);
+					}
+					
+					//раскраска границ
+					glBegin(GL_QUADS);
+					glVertex2i(_xBorderPixelPos - 100,						_yBorderPixelPos);
+					glVertex2i(_xBorderPixelPos + _textureBorderWidth,	_yBorderPixelPos);
+					glVertex2i(_xBorderPixelPos + _textureBorderWidth,	_yBorderPixelPos + _textureBorderHeight);
+					glVertex2i(_xBorderPixelPos - 100,						_yBorderPixelPos + _textureBorderHeight);
+					glEnd();
+
+					//glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+					//glStencilFunc(GL_EQUAL, 2, 255);
+					//glStencilFunc(GL_NOTEQUAL, 1, 255);
+
+					//рисую юнит ещё раз поверх всего
+					drawTexture(_xPixelPos, _yPixelPos,
+						_textureName, nullptr,
+						TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
+						!_isLookRight, false, 1
+					);
+
+					//для backlight`ов других юнитов, чтоб они не рисовали на границах
+					//glEnable(GL_ALPHA_TEST);
+					//glAlphaFunc(GL_NOTEQUAL, 0);
+
+					//glEnable(GL_STENCIL_TEST);
+
+					glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+					glStencilFunc(GL_NEVER, 255, 255); //по умолчанию 0, 0? //второе значение это типа флаги 0000000?
+					//glStencilFunc(GL_NEVER, 1, 0);
+					//glStencilFunc(GL_NEVER, 0, 255);
+					//glStencilFunc(GL_NEVER, 1, 1);
+
+					//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+					drawTexture(_xBorderPixelPos, _yBorderPixelPos,
+						_textureBorderName, nullptr,
+						TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
+						!_isLookRight, false, 1
+					);
+					//glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+					glDisable(GL_STENCIL_TEST);
+
+					glDisable(GL_ALPHA_TEST);
+				}
+			}
+			else {
+				//полупрозрачная подсветка
+				glEnable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_NOTEQUAL, 0);
+
+				glEnable(GL_STENCIL_TEST);
+
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				//glStencilFunc(GL_NOTEQUAL, 1, 255);
+				glStencilFunc(GL_NOTEQUAL, 255, 255);
+
+				glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+				drawTexture(_xPixelPos, _yPixelPos,
+					_textureName, nullptr,
+					TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
+					!_isLookRight, false, 0.45
+				);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+				glDisable(GL_STENCIL_TEST);
+
+				glDisable(GL_ALPHA_TEST);
 			}
 		}
 	}
 
-	void onClick() const {
+	void onClick() {
 		//_onClickCallback();
+		//_isChoosen = true;
+		Battle::Instance().setChosenUnit(this);
 	}
 
-	void getPosition(int* xPos, int* yPos) {
+	void setPosition(int xPos, int yPos, bool isLookRight) {
+		_xPos = xPos;
+		_yPos = yPos;
+		_isLookRight = isLookRight;
+	}
+
+	//void getPosition(int* xPos, int* yPos) const {
+	void getPosition(int* xPos, int* yPos, bool* isLookRight) const {
 		if (xPos != nullptr) *xPos = _xPos;
 		if (yPos != nullptr) *yPos = _yPos;
+		if (isLookRight != nullptr) *isLookRight = _isLookRight;
 	}
 
-	void move() {
+	unsigned int getPlayer() const {
+		return _player;
+	}
+
+	/*void move(Cell* cell) { //TODO //сделать позицию? отдать передвижение батлфилду? (скорее всего)
+		if (biomesData.at(cell->getBiomeType()).getPassability() && cell->getUnit() == nullptr) {
+			//VVVVVV это всё по идее должна делать одна команда VVVVVV
+
+			//убрать у текущей ячейки ссылку на юнит
+
+
+			//устанавливает у юнита новую позицию
+			int _xCellPos, _yCellPos;
+			cell->getPosition(&_xCellPos, &_yCellPos);
+			_xPos = _xCellPos;
+			_yPos = _yCellPos;
+
+			//устанавливаем клетке по этйо позиции юнита
+			cell->setUnit(this);
+		}
 		//_battleField[xPos][yPos].setUnit(nullptr);
 		//_battleField[newxPos][newyPos].setUnit(this);
-	}
+	}*/
 };
 
 
@@ -260,7 +448,7 @@ public:
 //---------------------------------------------------------------------------------------------
 //class Cell definition
 
-class Cell {
+class Cell : public ActiveGraphicItem {
 private:
 	const int _xPos, _yPos;
 	//Unit* _unit = nullptr;
@@ -273,7 +461,7 @@ public:
 		_biome = biome;
 	}
 
-	void drawSurface(const int xPixels, const int yPixels) const {
+	void drawSurface(const int xPixels, const int yPixels) {
 		int _xPixelPos = 0, _yPixelPos = 0;
 
 		_xPixelPos = xPixels + _xPos * (CELL_WIDTH * 0.75);
@@ -286,7 +474,8 @@ public:
 		
 		const TextureName _textureName = biomesData.at(_biome).getTextureName();
 
-		drawTexture(_xPixelPos, _yPixelPos, _textureName);
+		drawTexture(_xPixelPos, _yPixelPos, _textureName, (ActiveGraphicItem*) this);
+		//drawTexture(_xPixelPos, _yPixelPos, _textureName);
 
 		int _battleFieldWidth, _battleFieldHeight;
 		Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
@@ -375,6 +564,17 @@ public:
 
 	void drawUnitAndObject(const int xPixels, const int yPixels) const {
 		const TextureName _objectTextureName = biomesData.at(_biome).getObjectTextureName();
+
+		int _battleFieldWidth, _battleFieldHeight;
+		Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
+
+		bool _drawMovementMark = _mouseOver && Battle::Instance().getMovementMode()
+			&& _xPos >= LEFT_LAYER_THICKNESS_DECORATING_CELLS
+			&& _xPos < _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
+			&& _yPos < _battleFieldHeight - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
+			&& _yPos >= TOP_LAYER_THICKNESS_DECORATING_CELLS;
+
+		//на клетке что то есть
 		if (_objectTextureName != TextureName::NONE || _unit != nullptr) {
 
 			//int _textureWidth = 0, _textureHeight = 0;
@@ -387,6 +587,19 @@ public:
 			}
 			else { //нечётный стобец
 				_yPixelPos = yPixels + _yPos * CELL_HEIGHT;
+			}
+
+			if (_drawMovementMark) {
+				if (biomesData.at(_biome).getPassability() && _unit == nullptr) {
+					int _textureWidth = 0, _textureHeight = 0;
+					getTextureProperties(TextureName::AVAILABLE_MOVEMENT_MARK, &_textureWidth, &_textureHeight);
+					drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos + (CELL_HEIGHT - _textureHeight) / 2, TextureName::AVAILABLE_MOVEMENT_MARK);
+				}
+				else {
+					int _textureWidth = 0, _textureHeight = 0;
+					getTextureProperties(TextureName::NOT_AVAILABLE_MOVEMENT_MARK, &_textureWidth, &_textureHeight);
+					drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos + (CELL_HEIGHT - _textureHeight) / 2, TextureName::NOT_AVAILABLE_MOVEMENT_MARK);
+				}
 			}
 
 			//тень
@@ -402,7 +615,28 @@ public:
 				//srand(_xPixelsPos * _yPixelsPos) //дял красивого хаоса
 				drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos - _textureHeight + CELL_HEIGHT * 0.75, _objectTextureName);
 			}
-		}	
+		}
+
+		//включено передвижение и зажата правая кнопка мыши
+		else if (_drawMovementMark) {
+			int _xPixelPos = 0, _yPixelPos = 0;
+			_xPixelPos = xPixels + _xPos * (CELL_WIDTH * 0.75);
+			if (_xPos % 2 == 0) { //чётный столбец
+				_yPixelPos = yPixels + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
+			}
+			else { //нечётный стобец
+				_yPixelPos = yPixels + _yPos * CELL_HEIGHT;
+			}
+
+			int _textureWidth = 0, _textureHeight = 0;
+			getTextureProperties(TextureName::AVAILABLE_MOVEMENT_MARK, &_textureWidth, &_textureHeight);
+			drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos + (CELL_HEIGHT - _textureHeight) / 2, TextureName::AVAILABLE_MOVEMENT_MARK);
+		}
+	}
+
+	void getPosition(int* xPos, int* yPos) const {
+		if (xPos != nullptr) *xPos = _xPos;
+		if (yPos != nullptr) *yPos = _yPos;
 	}
 
 	const BiomeType getBiomeType() const {
@@ -411,6 +645,35 @@ public:
 
 	void setUnit(Unit* unit) {
 		_unit = unit;
+	}
+
+	Unit* getUnit() const {
+		return _unit;
+	}
+
+	virtual void onMouseOver(bool mouseOver) override {
+		//_mouseOver = mouseOver;
+		ActiveGraphicItem::onMouseOver(mouseOver);
+		
+		if (mouseOver) {
+			Battle::Instance().setCellUnderMouse(this);
+		}
+		else {
+			Battle::Instance().setCellUnderMouse(nullptr);
+		}
+
+		/*if (Battle::Instance().getMovementMode() == true) {
+			if (mouseOver) {
+				Battle::Instance().setMovementMarkCell(this);
+			}
+			else {
+				Battle::Instance().setMovementMarkCell(nullptr);
+			}
+		}*/
+	}
+
+	void onClick() {
+		Battle::Instance().switchBattleFieldScrolling(true);
 	}
 };
 
@@ -634,6 +897,9 @@ public:
 		//отрисовка объектов(деревьев, кустов...) и юнитов
 		drawCellUnitsAndObjects();
 
+		//подсветка movementMark
+		Battle::Instance().drawMovementMarkBacklight();
+
 		//отрисовка подсветки (второй раз с прозрачностью) юнитов, чтобы их было видно в кусте, за деревом или камнем
 		//drawCellUnitBacklights();
 		Battle::Instance().drawUnitBacklights();
@@ -669,12 +935,19 @@ public:
 		if (height != nullptr) *height = _height;
 	}
 
-	void getPosition(int* xPixelPos, int* yPixelPos) {
+	void getPosition(int* xPixelPos, int* yPixelPos) const {
 		if (xPixelPos != nullptr) *xPixelPos = _xPixelPos;
 		if (yPixelPos != nullptr) *yPixelPos = _yPixelPos;
 	}
 	
-	void updateAfterWindowResize() {
+	void setPosition(int xPixelPos, int yPixelPos) {
+		_xPixelPos = xPixelPos;
+		_yPixelPos = yPixelPos;
+		updatePos();
+	}
+
+	//обновление позиции камеры после смены положения battlefield относительно рамок окна
+	void updatePos() {
 		int _windowWidth = 0, _windowHeight = 0;
 		UserInterface::Instance().getWindowSize(&_windowWidth, &_windowHeight);
 
@@ -703,10 +976,120 @@ public:
 		}
 	}
 
-	void spawnUnit(Unit* unit) { //TODO
-		int xPos, yPos;
-		unit->getPosition(&xPos, &yPos);
-		_battlefield[xPos][yPos]->setUnit(unit);
+	void spawnUnit(Unit* unit, const int xPos, const int yPos, bool isLookRight) {
+		//biomesData.at(_biome).getPassability() && _unit == nullptr
+		bool _cellIsFree = false;
+		Cell* _cell = _battlefield[xPos][yPos];
+		_cellIsFree = biomesData.at(_cell->getBiomeType()).getPassability() && _cell->getUnit() == nullptr;
+
+		int _xPos = xPos, _yPos = yPos;
+		int _searchRadius = 1;
+		while (!_cellIsFree) {
+			bool noFreeCells = true;
+
+			for (int i = 1; i <= 6 * _searchRadius; i++) {
+				AdjacentCellRelativePos adjacentCellRelativePos;
+
+				int _stage = (i + _searchRadius - 1) / _searchRadius;
+
+				if (i == 1) {
+					adjacentCellRelativePos = AdjacentCellRelativePos::TOP; //всегда 1 раз
+				}
+				else if (_stage == 1) {
+					adjacentCellRelativePos = AdjacentCellRelativePos::RIGHT_TOP; //(_searchRadius - 1) раз
+				}
+				else if (_stage == 2) {
+					adjacentCellRelativePos = AdjacentCellRelativePos::RIGHT_BOTTOM; //_searchRadius раз
+				}
+				else if (_stage == 3) {
+					adjacentCellRelativePos = AdjacentCellRelativePos::BOTTOM; //_searchRadius раз
+				}
+				else if (_stage == 4) {
+					adjacentCellRelativePos = AdjacentCellRelativePos::LEFT_BOTTOM; //_searchRadius раз
+				}
+				else if (_stage == 5) {
+					adjacentCellRelativePos = AdjacentCellRelativePos::LEFT_TOP; //_searchRadius раз
+				}
+				else if (_stage == 6) {
+					adjacentCellRelativePos = AdjacentCellRelativePos::TOP; //_searchRadius раз
+				}
+
+				//получаем координаты соседней ячейки и саму ячейку если она находится 
+				_cell = getAdjacentCell(&_xPos, &_yPos, adjacentCellRelativePos);
+
+				if (_cell != nullptr) {
+					noFreeCells = false; //если нашлась хотя бы одна внутри поля, то значит искать в следующем радиусе имеет смысл
+					_cellIsFree = biomesData.at(_cell->getBiomeType()).getPassability() && _cell->getUnit() == nullptr;
+				}
+
+				if (_cellIsFree) break;
+			}
+
+			//проверка на то что мы не вышли за пределы поля //возможно избыточно
+			if (noFreeCells) {
+				cerr << "no free cells for unit spawn" << endl;
+				return;
+			}
+
+			_searchRadius++;
+		}
+
+		if (_cellIsFree) {
+			unit->setPosition(_xPos, _yPos, isLookRight);
+			_cell->setUnit(unit);
+			//_battlefield[xPos][yPos]->setUnit(unit);
+		}
+	}
+
+
+
+	//получаем соседнюю клетку и её координаты, даже если клетки там нету. клетки декорирующих границ(задников) считаются за отсутсвие клетки
+	Cell* getAdjacentCell(int* xPos, int* yPos, AdjacentCellRelativePos adjacentCellRelativePos) {
+		if (!Battle::Instance().getAdjacentCellPos(xPos, yPos, adjacentCellRelativePos)) return nullptr;
+
+		if (*xPos < LEFT_LAYER_THICKNESS_DECORATING_CELLS
+			|| *xPos >= _width - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
+			|| *yPos < TOP_LAYER_THICKNESS_DECORATING_CELLS
+			|| *yPos >= _height - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
+			) {
+			return nullptr;
+		}
+		else {
+			return _battlefield[*xPos][*yPos];
+		}
+	}
+
+
+
+	//гарантируется, что передвигаемый юнит ВСЕГДА располагается на существующей клетке
+	void moveUnit(Unit* unit, Cell* destinationCell) {
+		if (unit != nullptr && destinationCell != nullptr
+			&& biomesData.at(destinationCell->getBiomeType()).getPassability() 
+			&& destinationCell->getUnit() == nullptr
+		) {
+			//убрать у текущей ячейки ссылку на юнит
+			int _xUnitPos, _yUnitPos;
+			bool _unitIsLookRight;
+			unit->getPosition(&_xUnitPos, &_yUnitPos, &_unitIsLookRight);
+			_battlefield[_xUnitPos][_yUnitPos]->setUnit(nullptr);
+			
+			//утсанавливаем клетке назначения юнит
+			destinationCell->setUnit(unit);
+
+			//устанавливает у юнита новую позицию
+			int _xDestinationCellPos, _yDestinationCellPos;
+			destinationCell->getPosition(&_xDestinationCellPos, &_yDestinationCellPos);
+
+			if (_xUnitPos < _xDestinationCellPos) _unitIsLookRight = true;
+			else if (_xUnitPos > _xDestinationCellPos) _unitIsLookRight = false;
+
+			unit->setPosition(_xDestinationCellPos, _yDestinationCellPos, _unitIsLookRight);
+
+			//сортируем юниты для обводки
+			Battle::Instance().sortUnitsByBacklightsDrawOrder();
+		}
+		//_battleField[xPos][yPos].setUnit(nullptr);
+		//_battleField[newxPos][newyPos].setUnit(this);
 	}
 };
 
@@ -740,11 +1123,16 @@ void Battle::end() {
 		switchBattleFieldScrolling(false);
 	}
 
+	_movementMode = false;
+	//_movementMarkCell = nullptr;
+	_cellUnderMouse = nullptr;
+
 	//удаляем юнитов
 	for (int i = 0; i < _units.size(); i++) {
 		delete _units[i];
 	}
 	_units.clear();
+	_chosenUnit = nullptr;
 }
 
 void Battle::draw() {
@@ -770,13 +1158,80 @@ void Battle::switchBattleFieldScrolling(bool scrollingState) {
 	//cout << "scrollingState: " << scrollingState << endl;
 	if (_battleField != nullptr) {
 		_battleField->switchScrolling(scrollingState);
+		//UserInterface::Instance().switchOnMouseEventHandlingMode(!scrollingState);
 	}
 }
 
 void Battle::updateBattleFieldAfterWindowResize() {
 	if (_battleField != nullptr) {
-		_battleField->updateAfterWindowResize();
+		_battleField->updatePos();
 	}
+}
+
+void Battle::focusVisionOnCell(Cell* cell) {
+	int _xCellPos, _yCellPos;
+	cell->getPosition(&_xCellPos, &_yCellPos);
+
+	int _xPixelVisionPos, _yPixelVisionPos;
+
+	//получаем координаты клетки относительно battleField
+	_xPixelVisionPos = _xCellPos * (CELL_WIDTH * 0.75);
+
+	if (_xCellPos % 2 == 0) { //чётный столбец
+		_yPixelVisionPos = (CELL_HEIGHT * 0.5) + _yCellPos * CELL_HEIGHT;
+	}
+	else { //нечётный стобец
+		_yPixelVisionPos = _yCellPos * CELL_HEIGHT; //на пол клетки выше на экране
+	}
+
+	//получаем координаты центра клетки относительно battleField
+	_xPixelVisionPos += CELL_WIDTH * 0.25;
+	_yPixelVisionPos += CELL_HEIGHT * 0.5;
+
+	int _windowWidth, _windowHeight;
+	UserInterface::Instance().getWindowSize(&_windowWidth, &_windowHeight);
+
+	//получаем координаты battleField относительно окна с клеткой в центре
+	_xPixelVisionPos = _windowWidth / 2 - _xPixelVisionPos;
+	_yPixelVisionPos = _windowHeight / 2 - _yPixelVisionPos;
+
+	_battleField->setPosition(_xPixelVisionPos, _yPixelVisionPos);
+}
+
+void Battle::focusVisionOnCell(const int xCellPos, const int yCellPos) {
+	int _battleFieldWidth, _battleFieldHeight;
+	_battleField->getSize(&_battleFieldWidth, &_battleFieldHeight);
+
+	if (0 > xCellPos || xCellPos >= _battleFieldWidth
+		|| 0 > yCellPos || yCellPos >= _battleFieldHeight
+	) {
+		return;
+	}
+
+	int _xPixelVisionPos, _yPixelVisionPos;
+
+	//получаем координаты клетки относительно battleField
+	_xPixelVisionPos = xCellPos * (CELL_WIDTH * 0.75);
+
+	if (xCellPos % 2 == 0) { //чётный столбец
+		_yPixelVisionPos = (CELL_HEIGHT * 0.5) + yCellPos * CELL_HEIGHT;
+	}
+	else { //нечётный стобец
+		_yPixelVisionPos = yCellPos * CELL_HEIGHT; //на пол клетки выше на экране
+	}
+
+	//получаем координаты центра клетки относительно battleField
+	_xPixelVisionPos += CELL_WIDTH * 0.25;
+	_yPixelVisionPos += CELL_HEIGHT * 0.5;
+
+	int _windowWidth, _windowHeight;
+	UserInterface::Instance().getWindowSize(&_windowWidth, &_windowHeight);
+
+	//получаем координаты battleField относительно окна с клеткой в центре
+	_xPixelVisionPos = _windowWidth / 2 - _xPixelVisionPos;
+	_yPixelVisionPos = _windowHeight / 2 - _yPixelVisionPos;
+
+	_battleField->setPosition(_xPixelVisionPos, _yPixelVisionPos);
 }
 
 //тяжёлый алгоритм с большим количеством сравнений, чтений(получением позиций из объектов) и записей, НО ТОЛЬКО после передвижений //альтернатива это перебирать все ячейки по порядку - алгоритм чуток полегче, но зато исполняемый при отрисовке КАЖДОГО кадра
@@ -784,12 +1239,12 @@ void Battle::sortUnitsByBacklightsDrawOrder() {
 	//сортируем сначала по yPos
 	for (int i = 0; i < _units.size() - 1; i++) {
 		int priority_yPos;
-		_units[i]->getPosition(nullptr, &priority_yPos);
+		_units[i]->getPosition(nullptr, &priority_yPos, nullptr);
 		int priority_index = i;
 
 		for (int j = i + 1; j < _units.size(); j++) {
 			int yPos;
-			_units[j]->getPosition(nullptr, &yPos);
+			_units[j]->getPosition(nullptr, &yPos, nullptr);
 
 			//если новый найденный элемент имеет yPos больше
 			if (priority_yPos < yPos) {
@@ -802,11 +1257,11 @@ void Battle::sortUnitsByBacklightsDrawOrder() {
 
 				//xPos текущего приоритетного для отрисовки юнита
 				int priority_xPos;
-				_units[priority_index]->getPosition(&priority_xPos, nullptr);
+				_units[priority_index]->getPosition(&priority_xPos, nullptr, nullptr);
 
 				//xPos кандидата на более высокий приоритет
 				int xPos;
-				_units[j]->getPosition(&xPos, nullptr);
+				_units[j]->getPosition(&xPos, nullptr, nullptr);
 
 				//чётный xPos имеет приоритет
 				if (priority_xPos % 2 == 1 && xPos % 2 == 0) {
@@ -825,20 +1280,83 @@ void Battle::sortUnitsByBacklightsDrawOrder() {
 	}
 }
 
+void Battle::drawMovementMarkBacklight() {
+	//if (_movementMarkCell != nullptr) {
+	if (_movementMode && _cellUnderMouse != nullptr) {
+		int _xPos, _yPos;
+		//_movementMarkCell->getPosition(&_xPos, &_yPos);
+		_cellUnderMouse->getPosition(&_xPos, &_yPos);
+
+		int _battleFieldWidth, _battleFieldHeight;
+		Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
+
+		bool _drawMovementMark = _movementMode
+			&& _xPos >= LEFT_LAYER_THICKNESS_DECORATING_CELLS
+			&& _xPos < _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
+			&& _yPos < _battleFieldHeight - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
+			&& _yPos >= TOP_LAYER_THICKNESS_DECORATING_CELLS;
+
+		if (_drawMovementMark) {
+			int _xPixelBattleFieldPos, _yPixelBattleFieldPos;
+			_battleField->getPosition(&_xPixelBattleFieldPos, &_yPixelBattleFieldPos);
+
+			//получаем позицию клетки, на которой нужно нарисовать метку относителньо экрана в пикселях
+			int _xPixelPos = 0, _yPixelPos = 0;
+			_xPixelPos = _xPixelBattleFieldPos + _xPos * (CELL_WIDTH * 0.75);
+			if (_xPos % 2 == 0) { //чётный столбец
+				_yPixelPos = _yPixelBattleFieldPos + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
+			}
+			else { //нечётный стобец
+				_yPixelPos = _yPixelBattleFieldPos + _yPos * CELL_HEIGHT;
+			}
+
+			//получаем тип метки которую нам надо рисовать
+			TextureName _movementMarkTextureName;
+			//if (biomesData.at(_movementMarkCell->getBiomeType()).getPassability() && _movementMarkCell->getUnit() == nullptr) {
+			if (biomesData.at(_cellUnderMouse->getBiomeType()).getPassability() && _cellUnderMouse->getUnit() == nullptr) {
+				_movementMarkTextureName = TextureName::AVAILABLE_MOVEMENT_MARK;
+			}
+			else {
+				_movementMarkTextureName = TextureName::NOT_AVAILABLE_MOVEMENT_MARK;
+			}
+
+			int _textureWidth = 0, _textureHeight = 0;
+			getTextureProperties(_movementMarkTextureName, &_textureWidth, &_textureHeight);
+
+			//рисуем метку полупрозрачной
+			glEnable(GL_ALPHA_TEST);
+			glAlphaFunc(GL_NOTEQUAL, 0);
+
+			glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+			drawTexture(
+				_xPixelPos + (CELL_WIDTH - _textureWidth) / 2,
+				_yPixelPos + (CELL_HEIGHT - _textureHeight) / 2,
+				_movementMarkTextureName,
+				nullptr,
+				TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
+				false, false, 0.6
+			);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			glDisable(GL_ALPHA_TEST);
+		}
+	}
+}
+
 void Battle::drawUnitBacklights() {
 	int _xPixelBattleFieldPos, _yPixelBattleFieldPos;
 	_battleField->getPosition(&_xPixelBattleFieldPos, &_yPixelBattleFieldPos);
 
-	glEnable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_NOTEQUAL, 0);
+	//glEnable(GL_ALPHA_TEST);
+	//glAlphaFunc(GL_NOTEQUAL, 0);
 
-	glEnable(GL_STENCIL_TEST);
+	//glEnable(GL_STENCIL_TEST);
 
 	//glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA); //внутри вызываемого метода
 
 	for (int i = 0; i < _units.size(); i++) {
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilFunc(GL_NOTEQUAL, 1, 255);
+		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		//glStencilFunc(GL_NOTEQUAL, 1, 255);
 
 		_units[i]->drawBacklight(_xPixelBattleFieldPos, _yPixelBattleFieldPos);
 	}
@@ -859,29 +1377,146 @@ void Battle::drawUnitBacklights() {
 	glVertex2i(_xPos, _yPos + _height);
 	glEnd();*/
 
-	glDisable(GL_STENCIL_TEST);
+	//glDisable(GL_STENCIL_TEST);
 
-	glDisable(GL_ALPHA_TEST);
+	//glDisable(GL_ALPHA_TEST);
+}
+
+void Battle::setChosenUnit(Unit* unit) {
+	if (unit->getPlayer() == 0) {
+		_chosenUnit = unit;
+	}
+}
+
+Unit * Battle::getChosenUnit() {
+	return _chosenUnit;
+}
+
+void Battle::switchMovementMode(bool movementMode) {
+	if (_chosenUnit != nullptr) {
+		_movementMode = movementMode;
+
+		if (movementMode == false) {
+			_battleField->moveUnit(_chosenUnit, _cellUnderMouse);
+		}
+		//cout << "changeMoveMode on:" << movementMode << endl;//debug
+		/*if (movementMode == false) {
+			//_chosenUnit->move(_movementMarkCell);
+			//_battleField->move(_chosenUnit);
+			setMovementMarkCell(nullptr);
+		}*/
+	}
+}
+
+bool Battle::getMovementMode() {
+	return _movementMode;
+}
+
+/*void Battle::setMovementMarkCell(Cell* movementMarkCell) {
+	_movementMarkCell = movementMarkCell;
+}*/
+
+void Battle::setCellUnderMouse(Cell* cellUnderMouse) {
+	_cellUnderMouse = cellUnderMouse;
+}
+
+/*Cell * Battle::getMovementMarkCell() {
+	return _movementMarkCell;
+}*/
+
+Cell * Battle::getCellUnderMouse() {
+	return _cellUnderMouse;
+}
+
+bool Battle::getAdjacentCellPos(int* xPos, int* yPos, AdjacentCellRelativePos adjacentCellRelativePos) {
+	if (xPos == nullptr || yPos == nullptr) return false;
+
+	const int _xPos = *xPos, _yPos = *yPos;
+
+	switch (adjacentCellRelativePos) {
+	case AdjacentCellRelativePos::LEFT_BOTTOM:
+		*xPos = _xPos - 1;
+		if (_xPos % 2 == 0) *yPos = _yPos + 1;
+		break;
+
+	case AdjacentCellRelativePos::LEFT_TOP:
+		*xPos = _xPos - 1;
+		if (_xPos % 2 == 1) *yPos = _yPos - 1;
+		break;
+
+	case AdjacentCellRelativePos::TOP:
+		*yPos = _yPos - 1;
+		break;
+
+	case AdjacentCellRelativePos::RIGHT_TOP:
+		*xPos = _xPos + 1;
+		if (_xPos % 2 == 1) *yPos = _yPos - 1;
+		break;
+
+	case AdjacentCellRelativePos::RIGHT_BOTTOM:
+		*xPos = _xPos + 1;
+		if (_xPos % 2 == 0) *yPos = _yPos + 1;
+		break;
+
+	case AdjacentCellRelativePos::BOTTOM:
+		*yPos = _yPos + 1;
+		break;
+	}
+
+	return true;
 }
 
 void Battle::spawnUnit() { //TODO
-	Unit* _unit = new Unit(4, 10, true, 0);
-	_units.push_back(_unit);
-	_battleField->spawnUnit(_unit);
+	int battleFieldWidth, battleFieldHeight;
+	_battleField->getSize(&battleFieldWidth, &battleFieldHeight);
 
-	_unit = new Unit(5, 10, false, 0);
+	//Unit* _unit = new Unit(4, 10, true, 0);
+	Unit* _unit = new Unit(UnitType::WIZARD, 0);
 	_units.push_back(_unit);
-	_battleField->spawnUnit(_unit);
+	_battleField->spawnUnit(
+		_unit, 
+		LEFT_LAYER_THICKNESS_DECORATING_CELLS, 
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS, 
+		true
+	);
 
-	_unit = new Unit(4, 11, true, 0);
+	//_unit = new Unit(5, 10, false, 0);
+	_unit = new Unit(UnitType::WIZARD, 0);
 	_units.push_back(_unit);
-	_battleField->spawnUnit(_unit);
+	_battleField->spawnUnit(
+		_unit, 
+		LEFT_LAYER_THICKNESS_DECORATING_CELLS, 
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
+		true
+	);
 
-	_unit = new Unit(15, 19, true, 0);
+	//_unit = new Unit(4, 11, true, 0);
+	_unit = new Unit(UnitType::WIZARD, 0);
 	_units.push_back(_unit);
-	_battleField->spawnUnit(_unit);
+	_battleField->spawnUnit(
+		_unit, 
+		LEFT_LAYER_THICKNESS_DECORATING_CELLS, 
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
+		true
+	);
+
+	//_unit = new Unit(15, 19, true, 1);
+	_unit = new Unit(UnitType::WIZARD, 1);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(
+		_unit, 
+		battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 1, 
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
+		false
+	);
 
 	sortUnitsByBacklightsDrawOrder();
+
+	//if (_battleField[])
+	focusVisionOnCell(
+		LEFT_LAYER_THICKNESS_DECORATING_CELLS,
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS
+	);
 }
 
 
@@ -890,3 +1525,47 @@ void Battle::spawnUnit() { //TODO
 //functions
 
 //void loadBiomes;
+
+/*void getTextureBorderMask() {
+	//алгоритм выполняется 6 сек
+	//потенциально можно его очень сильно облегчить при условии что текстура не будет иметь "дырок" и будет состоять из единой сплошной области пикселей
+	//его можно использовать для рисования динамический границ, но только если загружать в текстуру (типа кеш) и обновлять текстуру при изменении размеров юнитов (при приближении экрана?)
+	bool** const _textureControlField = getTextureControlField(_textureName, TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1, !_isLookRight, false);
+
+	//инициализируем маску обводки текстуры
+	int _borderSize = 5;
+	bool** _textureBorderMask = new bool*[_textureWidth + _borderSize * 2];
+	for (int x = 0; x < _textureWidth + _borderSize * 2; x++) {
+		_textureBorderMask[x] = new bool[_textureHeight + _borderSize * 2];
+		for (int y = 0; y < _textureHeight + _borderSize * 2; y++) {
+			_textureBorderMask[x][y] = false;
+		}
+	}
+
+	//создаём маску обводки текстуры
+	for (int x = _borderSize; x < _textureWidth + _borderSize; x++) {
+		for (int y = _borderSize; y < _textureHeight + _borderSize; y++) {
+			if (_textureControlField[x - _borderSize][y - _borderSize]) { // == true
+				//"рисуем" в маску ромб
+				for (int _x = x - _borderSize, ySize = 0; _x <= x + _borderSize; _x++) {
+					for (int _y = y - ySize; _y <= y + ySize; _y++) {
+						if (!_textureControlField[_x - _borderSize][_y - _borderSize]) { // == false
+							_textureBorderMask[_x][_y] == true;
+						}
+					}
+
+					if (ySize < _borderSize) ySize++;
+					else ySize--;
+				}
+			}
+		}
+	}
+
+	return _textureBorderMask;
+
+	////удалим маску обводки //TODO кеш
+	//for (int x = 0; x < _textureWidth + _borderSize * 2; x++) {
+	//	delete[] _textureBorderMask[x];
+	//}
+	//delete[] _textureBorderMask;
+}*/

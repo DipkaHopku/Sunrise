@@ -178,7 +178,7 @@ void UserInterface::setWindowSize(int windowWidth, int windowHeight) {
 	_windowHeight = windowHeight;
 
 	//после изменения размеров окна курсор поменяет свою позицию внутри окна
-	setCursorPos(-1, -1);
+	//setCursorPos(-1, -1);
 
 	clearControlField();
 
@@ -219,7 +219,7 @@ arguments:
 void UserInterface::setActiveGraphicItemTextureControlField(
 	int xPos, int textureWidth,
 	int yPos, int textureHeight,
-	bool** const textureControlField, //должен освобождаться
+	bool** const textureControlField, //должен освобождаться //этим занимается drawTexture?
 	ActiveGraphicItem* activeUIItem
 ) {
 	//for (int x = xPos; (x < xPos + textureWidth) && (x < _windowWidth); x++) {
@@ -237,10 +237,10 @@ void UserInterface::setActiveGraphicItemTextureControlField(
 		}
 	}
 
-	for (int x = 0; x < textureWidth; x++) {
+	/*for (int x = 0; x < textureWidth; x++) {
 		delete[] textureControlField[x];
 	}
-	delete[] textureControlField;
+	delete[] textureControlField;*/
 }
 
 /*void UserInterface::setActiveGraphicItemTextureControlField(int xPos, int yPos, TextureName textureName, ActiveGraphicItem* activeUIItem) {
@@ -259,24 +259,66 @@ void UserInterface::setActiveGraphicItemTextureControlField(
 }*/
 
 void UserInterface::triggerActiveGraphicItemOnClickCallbackAtPoint(int xPos, int yPos) {
-	ActiveGraphicItem* activeGraphicItem = _controlField[xPos][yPos];
+	if (_currentActiveGraphicItem != nullptr) {
+		_currentActiveGraphicItem->onClick();
+	}
+
+	/*ActiveGraphicItem* activeGraphicItem = _controlField[xPos][yPos];
 	if (activeGraphicItem != nullptr) {
 		activeGraphicItem->onClick();
-	} 
+	} */
 	
-	//включение скрола в сражении
+	/*//включение скрола в сражении
 	else if (_applicationState == ApplicationState::BATTLE) {
 		Battle::Instance().switchBattleFieldScrolling(true);
-	}
+	}*/
 }
+
+/*void UserInterface::switchOnMouseEventHandlingMode(bool onMouseEventHandlingMode) {
+	_onMouseEventHandlingMode = onMouseEventHandlingMode;
+}*/
 
 /*bool UserInterface::triggeActiveUIItemOnClickCallbackAtPoint(int xPos, int yPos) {
 
 }*/
 
 void UserInterface::setCursorPos(int xCursorPos, int yCursorPos) {
+	//cout << xCursorPos << ' ' << yCursorPos << endl;
+
+	if (xCursorPos > -1 && yCursorPos > -1
+		&& xCursorPos < _windowWidth && yCursorPos < _windowHeight) { //курсор в пределах экрана
+		//&& xCursorPos <= _windowWidth && yCursorPos <= _windowHeight) { //курсор в пределах экрана
+		//получаем объект над которым сейчас находится курсор
+		ActiveGraphicItem* _activeGrapicItem = _controlField[xCursorPos][yCursorPos];
+
+		//cout << "act: " << _activeGrapicItem << "; cur: " << _currentActiveGraphicItem << endl;
+
+		if (_activeGrapicItem != _currentActiveGraphicItem) {  //курсор сошёл с того объекта, над которым до этого находился
+			//cout << "change: ac: " << _activeGrapicItem << " prev: " << _prevActiveGraphicItem  << endl;
+			//cout << "change: prev: " << _controlField[_xCursorPos][_yCursorPos] << endl;
+			if (_currentActiveGraphicItem != nullptr) {//если до этого находились над активным объектом
+				_currentActiveGraphicItem->onMouseOver(false);
+			} //иначе ничего делать не надо
+
+			if (_activeGrapicItem != nullptr) {
+				_activeGrapicItem->onMouseOver(true);
+			}
+
+			_currentActiveGraphicItem = _activeGrapicItem;
+		} //не сошёл с того объекта, над которым до этого был
+	}
+	else { //курсор покинул экран
+		if (_currentActiveGraphicItem != nullptr) {//если до этого находились над активным объектом
+			_currentActiveGraphicItem->onMouseOver(false);
+			_currentActiveGraphicItem = nullptr;
+		} //иначе ничего делать не надо
+	}
+
+
 	//cout << xCursorPos << " - " << yCursorPos << endl;
-	//над каким объектом до этого находился курсор
+	//if (_onMouseEventHandlingMode) {
+
+	/*//над каким объектом до этого находился курсор
 	ActiveGraphicItem* _prevActiveGraphicItem = nullptr;
 	if (_xCursorPos > -1 && _yCursorPos > -1) {
 		_prevActiveGraphicItem = _controlField[_xCursorPos][_yCursorPos];
@@ -298,11 +340,14 @@ void UserInterface::setCursorPos(int xCursorPos, int yCursorPos) {
 				_activeGrapicItem->onMouseOver(true);
 			}
 		} //не сошёл с того объекта, над которым до этого был
-	} else { //курсор покинул экран
+	}
+	else { //курсор покинул экран
 		if (_prevActiveGraphicItem != nullptr) {//если до этого находились над активным объектом
 			_prevActiveGraphicItem->onMouseOver(false);
 		} //иначе ничего делать не надо
-	}
+	}*/
+
+	//}
 
 	_xCursorPos = xCursorPos;
 	_yCursorPos = yCursorPos;
@@ -346,6 +391,8 @@ void UserInterface::clearControlField() {
 			_controlField[x][y] = nullptr;
 		}
 	}
+
+	//_currentActiveGraphicItem = nullptr;
 }
 
 /*
@@ -359,7 +406,7 @@ void UserInterface::setUIItemsContainer(UIItemsContainer* UIItemsContainer) {
 
 	updateContainerProperties();
 
-	setCursorPos(-1, -1);//чтоб активные элементы подсвечивались после первого движения, а не только после захода курсора на следующий активный элемент
+	//setCursorPos(-1, -1);//чтоб активные элементы подсвечивались после первого движения, а не только после захода курсора на следующий активный элемент
 }
 
 void UserInterface::updateContainerProperties() { //существует, потому что рассчитывать параметры контейнеров надо не только при добавлении элементов в контейнер, но и при изменении размеров окна //как минимум это задел на появление скрола при малых и недостаточных размерах окна
@@ -417,6 +464,7 @@ void UserInterface::drawUserInterface() const {
 void UserInterface::setApplicationState(ApplicationState applicationState) {
 	//if (applicationState == _applicationStateNext) {
 	_applicationState = applicationState;
+	clearControlField();
 }
 
 ApplicationState UserInterface::getApplicationState() const {
@@ -424,6 +472,7 @@ ApplicationState UserInterface::getApplicationState() const {
 }
 
 bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNext) {
+
 	//запрос на то чтобы остаться там где и был - это ок
 	if (_applicationState == applicationStateNext) {
 		_applicationStateNext = applicationStateNext;
@@ -434,6 +483,8 @@ bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNex
 	else if (_applicationState == ApplicationState::APPLICATION_LAUNCH 
 		&& applicationStateNext == ApplicationState::MAIN_MENU
 	) { ////проверка на то что до этого не нажимались другие кнопки
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
 		_applicationStateNext = applicationStateNext;
 		createMainMenu();
 		return true;
@@ -443,6 +494,8 @@ bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNex
 	else if (_applicationState == ApplicationState::MAIN_MENU
 		&& applicationStateNext == ApplicationState::OPTIONS
 	) { ////проверка на то что до этого не нажимались другие кнопки
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
 		_applicationStateNext = applicationStateNext; //= ApplicationState::OPTIONS
 		createOptionsMenu();
 		return true;
@@ -452,6 +505,8 @@ bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNex
 	else if (_applicationState == ApplicationState::OPTIONS
 		&& applicationStateNext == ApplicationState::MAIN_MENU
 	) {
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
 		_applicationStateNext = applicationStateNext; //= ApplicationState::MAIN_MENU
 		createMainMenu();
 		return true;
@@ -461,6 +516,8 @@ bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNex
 	else if (_applicationState == ApplicationState::MAIN_MENU
 		&& applicationStateNext == ApplicationState::BATTLE
 	) {
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
 		_applicationStateNext = applicationStateNext; //= ApplicationState::BATTLE
 		setUIItemsContainer(nullptr);
 		Battle::Instance().begin();
@@ -471,6 +528,8 @@ bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNex
 	else if (_applicationState == ApplicationState::BATTLE
 		&& applicationStateNext == ApplicationState::MAIN_MENU
 		) {
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
 		_applicationStateNext = applicationStateNext; //= ApplicationState::BATTLE
 		createMainMenu();
 		Battle::Instance().end();
@@ -907,7 +966,7 @@ public:
 		delete[] _charsLocation;*/
 	}
 
-	void onClick() const {
+	void onClick() {
 		_onClickCallback();
 	}
 
@@ -1157,7 +1216,7 @@ public:
 	~CheckBox() {
 	}
 
-	void onClick() const {
+	void onClick() {
 		_onClickCallback();
 	}
 
@@ -1360,6 +1419,18 @@ void callback_mouseButton(GLFWwindow *window, const int button, const int action
 	else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
 		if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::BATTLE) {
 			Battle::Instance().switchBattleFieldScrolling(false);
+		}
+	}
+
+	else if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS) {
+		if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::BATTLE) {
+			Battle::Instance().switchMovementMode(true);
+		}
+	}
+
+	else if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE) {
+		if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::BATTLE) {
+			Battle::Instance().switchMovementMode(false);
 		}
 	}
 }

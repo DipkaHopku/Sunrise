@@ -75,6 +75,11 @@ void gameplayProcessing() {
 
 	UserInterface::Instance().drawUserInterface();
 
+	//контент под курсор может меняться, хотя курсор может и не двигаться, так что вручную вызывает событие определения того что находится под курсором
+	int	_xCursorPos, _yCursorPos;
+	UserInterface::Instance().getCursorPos(&_xCursorPos, &_yCursorPos);
+	UserInterface::Instance().setCursorPos(_xCursorPos, _yCursorPos);
+
 	/*double cursor_x, cursor_y;
 	glfwGetCursorPos(window, &cursor_x, &cursor_y);
 

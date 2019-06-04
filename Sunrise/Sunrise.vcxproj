@@ -98,7 +98,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)External/glfw-3.3.bin.WIN64/lib-vc2017;$(SolutionDir)External\glew-2.1.0\lib\Release\x64;$(SolutionDir)External\Simple OpenGL Image Library\lib\x64;$(SolutionDir)External\freetype-2.10.0\objs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)External/glfw-3.3.bin.WIN64/lib-vc2017;$(SolutionDir)External\glew-2.1.0\lib\Release\x64;$(SolutionDir)External\Simple OpenGL Image Library\lib\x64;$(SolutionDir)External\freetype-2.10.0\objs\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glew32.lib;glfw3.lib;opengl32.lib;SOIL.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>

@@ -151,7 +151,12 @@ private:
 
 	int _displayWidth = 0;
 	int _displayHeight = 0;
+
 	ActiveGraphicItem*** _controlField = nullptr;
+	ActiveGraphicItem* _currentActiveGraphicItem = nullptr;
+	//bool _onMouseEventHandlingMode = true;
+	//bool _triggerActiveGraphicItemOnClickCallbackMode = true;
+
 	int _windowWidth = 0;
 	int _windowHeight = 0;
 
@@ -222,6 +227,9 @@ public:
 	//void setActiveGraphicItemTextureControlField(int, int, TextureName, ActiveGraphicItem*);
 
 	void triggerActiveGraphicItemOnClickCallbackAtPoint(int, int);
+
+	//void switchTriggerActiveGraphicItemOnClickCallbackMode(bool);
+	//void switchOnMouseEventHandlingMode(bool);
 
 	void setCursorPos(int, int);
 
@@ -334,7 +342,7 @@ protected:
 	void(*_onClickCallback)();
 
 public:
-	virtual void onClick() const = 0;
+	virtual void onClick() = 0;
 	//virtual void onClick() = 0;
 	//virtual void onMouseOver(bool) = 0;
 	virtual void onMouseOver(bool);

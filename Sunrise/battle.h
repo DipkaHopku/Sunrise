@@ -20,11 +20,22 @@ enum class BiomeType {
 	NONE
 };
 
+enum class AdjacentCellRelativePos {
+	LEFT_BOTTOM,
+	LEFT_TOP,
+	TOP,
+	RIGHT_TOP,
+	RIGHT_BOTTOM,
+	BOTTOM
+};
+
 enum class UnitType {
 	WIZARD
 };
 
 class Unit;
+
+class Cell;
 
 class BattleField;
 
@@ -37,6 +48,11 @@ private:
 
 	BattleField* _battleField = nullptr;
 	vector<Unit*> _units;
+
+	Unit* _chosenUnit = nullptr;
+	bool _movementMode = false;
+	Cell* _cellUnderMouse = nullptr;
+	//Cell* _movementMarkCell = nullptr;
 
 	int _turn;
 
@@ -61,6 +77,10 @@ public:
 
 	void updateBattleFieldAfterWindowResize();
 
+	void focusVisionOnCell(Cell*);
+
+	void focusVisionOnCell(int xCellPos, int yCellPos);
+
 	/*Unit* const getUnitByIndex(int index) const {
 		if (index < _units.size()) {
 			return _units[index];
@@ -72,7 +92,27 @@ public:
 
 	void sortUnitsByBacklightsDrawOrder();
 
+	void drawMovementMarkBacklight();
+	
 	void drawUnitBacklights();
 
-	void spawnUnit();
+	void setChosenUnit(Unit*);
+
+	Unit* getChosenUnit();
+
+	void switchMovementMode(bool);
+
+	//void setChosenUnit(Unit*);
+
+	bool getMovementMode();
+
+	//void setMovementMarkCell(Cell*);
+	void setCellUnderMouse(Cell*);
+
+	//Cell* getMovementMarkCell();
+	Cell* getCellUnderMouse();
+
+	bool getAdjacentCellPos(int*, int*, AdjacentCellRelativePos);
+
+	void spawnUnit(); //TODO spawnUnits?
 };
