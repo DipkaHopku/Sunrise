@@ -1067,26 +1067,38 @@ public:
 			&& biomesData.at(destinationCell->getBiomeType()).getPassability() 
 			&& destinationCell->getUnit() == nullptr
 		) {
-			//убрать у текущей €чейки ссылку на юнит
-			int _xUnitPos, _yUnitPos;
-			bool _unitIsLookRight;
-			unit->getPosition(&_xUnitPos, &_yUnitPos, &_unitIsLookRight);
-			_battlefield[_xUnitPos][_yUnitPos]->setUnit(nullptr);
-			
-			//утсанавливаем клетке назначени€ юнит
-			destinationCell->setUnit(unit);
-
-			//устанавливает у юнита новую позицию
+			//получаем координаты клетки назначени€
 			int _xDestinationCellPos, _yDestinationCellPos;
 			destinationCell->getPosition(&_xDestinationCellPos, &_yDestinationCellPos);
 
-			if (_xUnitPos < _xDestinationCellPos) _unitIsLookRight = true;
-			else if (_xUnitPos > _xDestinationCellPos) _unitIsLookRight = false;
+			int _battleFieldWidth, _battleFieldHeight;
+			Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
 
-			unit->setPosition(_xDestinationCellPos, _yDestinationCellPos, _unitIsLookRight);
+			bool _moveUnit = 
+				_xDestinationCellPos >= LEFT_LAYER_THICKNESS_DECORATING_CELLS
+				&& _xDestinationCellPos < _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
+				&& _yDestinationCellPos < _battleFieldHeight - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
+				&& _yDestinationCellPos >= TOP_LAYER_THICKNESS_DECORATING_CELLS;
 
-			//сортируем юниты дл€ обводки
-			Battle::Instance().sortUnitsByBacklightsDrawOrder();
+			if (_moveUnit) {
+				//убрать у текущей €чейки ссылку на юнит
+				int _xUnitPos, _yUnitPos;
+				bool _unitIsLookRight;
+				unit->getPosition(&_xUnitPos, &_yUnitPos, &_unitIsLookRight);
+				_battlefield[_xUnitPos][_yUnitPos]->setUnit(nullptr);
+
+				//утсанавливаем клетке назначени€ юнит
+				destinationCell->setUnit(unit);
+
+				//устанавливает у юнита новую позицию
+				if (_xUnitPos < _xDestinationCellPos) _unitIsLookRight = true;
+				else if (_xUnitPos > _xDestinationCellPos) _unitIsLookRight = false;
+
+				unit->setPosition(_xDestinationCellPos, _yDestinationCellPos, _unitIsLookRight);
+
+				//сортируем юниты дл€ обводки
+				Battle::Instance().sortUnitsByBacklightsDrawOrder();
+			}
 		}
 		//_battleField[xPos][yPos].setUnit(nullptr);
 		//_battleField[newxPos][newyPos].setUnit(this);
