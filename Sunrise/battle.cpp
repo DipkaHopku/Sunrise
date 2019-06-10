@@ -1,7 +1,8 @@
 #include "battle.h"
 
 const map<const TextureName, const TextureName> textureBorders = {
-	{TextureName::WIZARD, TextureName::WIZARD_BORDER}
+	{TextureName::WIZARD, TextureName::WIZARD_BORDER},
+	{TextureName::WARRIOR, TextureName::WARRIOR_BORDER}
 };
 
 
@@ -91,9 +92,72 @@ const map<const BiomeType, const BiomeProperties> biomesData = {
 
 
 
-const map<const UnitType, const TextureName> unitTypesData = {
-	{UnitType::WIZARD, TextureName::WIZARD}
+class UnitTypeProperties {
+private:
+	TextureName _textureName;
+	unsigned int _attackRange; //maxAttackDistance
+	unsigned int _defaultActionPoints;
+	unsigned int _attackActionPointsCost; //attackSpendingActionPoints
+	unsigned int _defaultHealthPoints;
+	unsigned int _defaultAttackPower;
+
+public:
+	UnitTypeProperties(
+		const TextureName textureName,
+		const unsigned int maxAttackRange,
+		const unsigned int defaultActionPoints,
+		const unsigned int attackActionPointsCost,
+		const unsigned int defaultHealthPoints,
+		const unsigned int defaultAttackPower
+	) noexcept
+		: _textureName(textureName),
+		_attackRange(maxAttackRange),
+		_defaultActionPoints(defaultActionPoints),
+		_attackActionPointsCost(attackActionPointsCost),
+		_defaultHealthPoints(defaultHealthPoints),
+		_defaultAttackPower(defaultAttackPower)
+	{
+
+	}
+
+	TextureName getTextureName() const {
+		return _textureName;
+	}
+
+	unsigned int getAttackRange() const {
+		return _attackRange;
+	}
+
+	unsigned int getDefaultActionPoints() const {
+		return _defaultActionPoints;
+	}
+
+	unsigned int getAttackActionPointsCost() const {
+		return _attackActionPointsCost;
+	}
+
+	unsigned int getDefaultHealthPoints() const {
+		return _defaultHealthPoints;
+	}
+
+	unsigned int getDefaultAttackPower() const {
+		return _defaultAttackPower;
+	}
 };
+
+
+
+const map<const UnitType, const UnitTypeProperties> unitTypesData = {
+	{UnitType::WIZARD, UnitTypeProperties(TextureName::WIZARD, 5, 8, 6, 100, 40)},
+	{UnitType::WARRIOR, UnitTypeProperties(TextureName::WARRIOR, 1, 8, 4, 150, 60)}
+};
+
+
+
+/*const map<const UnitType, const TextureName> unitTexturesData = {
+	{UnitType::WIZARD, TextureName::WIZARD},
+	{UnitType::WARRIOR, TextureName::WARRIOR}
+};*/
 
 
 
@@ -108,6 +172,8 @@ private:
 	UnitType _unitType;
 	bool _isLookRight;
 	unsigned int _player;
+	unsigned int _healthPoints;
+	unsigned int _actionPoints;
 	//bool _isChoosen = false;
 
 	//Cell* _cell;
@@ -125,6 +191,10 @@ public:
 	Unit(UnitType unitType, int player) {
 		_unitType = unitType;
 		_player = player;
+
+		UnitTypeProperties _UnitTypeProperties = unitTypesData.at(unitType);
+		_healthPoints = _UnitTypeProperties.getDefaultHealthPoints();
+		_actionPoints = _UnitTypeProperties.getDefaultActionPoints();
 	}
 
 	/*Unit(int xPos, int yPos, bool isLookRight, int player) {
@@ -138,7 +208,7 @@ public:
 	void draw(int xPixelPos, int yPixelPos) const {
 		auto _unitTypeData = unitTypesData.find(_unitType); //возможно дорого по ресурсам
 		if (_unitTypeData != unitTypesData.end()) {
-			TextureName _textureName = _unitTypeData->second;
+			TextureName _textureName = _unitTypeData->second.getTextureName();
 
 			int _textureWidth, _textureHeight;
 			getTextureProperties(_textureName, &_textureWidth, &_textureHeight);
@@ -158,7 +228,7 @@ public:
 
 	//требует координаты верхнего левого угла battleField
 	void drawBacklight(const int xPixelPos, const int yPixelPos) const {
-		auto _unitTypeData = unitTypesData.find(_unitType);
+		auto _unitTypeData = unitTypesData.find(_unitType); //возможно дорого по ресурсам
 		if (_unitTypeData != unitTypesData.end()) {
 			//получение позиции ячейки
 			int _xPixelPos = 0, _yPixelPos = 0;
@@ -171,7 +241,7 @@ public:
 			}
 
 			//получение позиции юнита
-			TextureName _textureName = _unitTypeData->second;
+			TextureName _textureName = _unitTypeData->second.getTextureName();
 
 			int _textureWidth, _textureHeight;
 			getTextureProperties(_textureName, &_textureWidth, &_textureHeight);
@@ -331,10 +401,10 @@ public:
 					
 					//раскраска границ
 					glBegin(GL_QUADS);
-					glVertex2i(_xBorderPixelPos - 100,						_yBorderPixelPos);
+					glVertex2i(_xBorderPixelPos,						_yBorderPixelPos);
 					glVertex2i(_xBorderPixelPos + _textureBorderWidth,	_yBorderPixelPos);
 					glVertex2i(_xBorderPixelPos + _textureBorderWidth,	_yBorderPixelPos + _textureBorderHeight);
-					glVertex2i(_xBorderPixelPos - 100,						_yBorderPixelPos + _textureBorderHeight);
+					glVertex2i(_xBorderPixelPos,						_yBorderPixelPos + _textureBorderHeight);
 					glEnd();
 
 					//glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -354,8 +424,10 @@ public:
 
 					//glEnable(GL_STENCIL_TEST);
 
+					//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					//glStencilFunc(GL_ALWAYS, 255, 255); //по умолчанию 0, 0? //второе значение это типа флаги 0000000?
 					glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-					glStencilFunc(GL_NEVER, 255, 255); //по умолчанию 0, 0? //второе значение это типа флаги 0000000?
+					glStencilFunc(GL_NEVER, 255, 255);
 					//glStencilFunc(GL_NEVER, 1, 0);
 					//glStencilFunc(GL_NEVER, 0, 255);
 					//glStencilFunc(GL_NEVER, 1, 1);
@@ -368,7 +440,92 @@ public:
 					);
 					//glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
+					//рисую инфу о юните
+					int _healthBarWidth, _healthBarHeight;
+					Battle::Instance().getHealthBarSize(&_healthBarWidth, &_healthBarHeight);
+					_healthBarWidth += 15 * 2;
+					_healthBarHeight += 5 * 2;
+					int _xPixelPosHealthBar = _xPixelPos + (_textureWidth - _healthBarWidth) / 2;
+					int _yPixelPosHealthBar = _yPixelPos - _healthBarHeight - 10;
+
+					int _defaultHealthPoints = unitTypesData.at(_unitType).getDefaultHealthPoints();
+					float _healthPointsPercentage = (float) _healthPoints / _defaultHealthPoints;
+
+					//glEnable(GL_STENCIL_TEST);
+
+					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					glStencilFunc(GL_NOTEQUAL, 255, 255);
+
+					//количество оставшихся од
+					string _actionPointsStatus = "Action points: " + std::to_string(_actionPoints);
+					drawString(
+						_xPixelPosHealthBar,
+						_yPixelPosHealthBar - (_healthBarHeight - 5) * 4,
+						FontName::SIMPLE_TEXT,
+						_actionPointsStatus,
+						BUTTON_FONT_COLOR_RGB);
+
+					//ренж атаки
+					string _attackRangeStatus = "Attack range: " + std::to_string(unitTypesData.at(_unitType).getAttackRange());
+					drawString(
+						_xPixelPosHealthBar,
+						_yPixelPosHealthBar - (_healthBarHeight - 5) * 3,
+						FontName::SIMPLE_TEXT,
+						_attackRangeStatus,
+						BUTTON_FONT_COLOR_RGB);
+
+					//стоимость атаки
+					string _attackCostStatus = "Attack cost: " + std::to_string(unitTypesData.at(_unitType).getAttackActionPointsCost());
+					drawString(
+						_xPixelPosHealthBar,
+						_yPixelPosHealthBar - (_healthBarHeight - 5) * 2,
+						FontName::SIMPLE_TEXT,
+						_attackCostStatus,
+						BUTTON_FONT_COLOR_RGB);
+
+					//сила атаки
+					string _attackPowerStatus = "Attack power: " + std::to_string(unitTypesData.at(_unitType).getDefaultAttackPower());
+					drawString(
+						_xPixelPosHealthBar,
+						_yPixelPosHealthBar - (_healthBarHeight - 5),
+						FontName::SIMPLE_TEXT,
+						_attackPowerStatus,
+						BUTTON_FONT_COLOR_RGB);
+
+					//красным оставшееся хп
+					//glColor4fv(ENEMY_COLOR_RGB);
+					glColor4f(0.8, 0.2, 0.2, 0.5);
+					glBegin(GL_QUADS);
+					glVertex2i(_xPixelPosHealthBar, _yPixelPosHealthBar);
+					glVertex2i(_xPixelPosHealthBar + _healthBarWidth * _healthPointsPercentage, _yPixelPosHealthBar);
+					glVertex2i(_xPixelPosHealthBar + _healthBarWidth * _healthPointsPercentage, _yPixelPosHealthBar + _healthBarHeight);
+					glVertex2i(_xPixelPosHealthBar, _yPixelPosHealthBar + _healthBarHeight);
+					glEnd();
+
+					//чёрным недостоющее
+					glColor4f(0, 0, 0, 0.5);
+					glBegin(GL_QUADS);
+					glVertex2i(_xPixelPosHealthBar + _healthBarWidth * _healthPointsPercentage, _yPixelPosHealthBar);
+					glVertex2i(_xPixelPosHealthBar + _healthBarWidth, _yPixelPosHealthBar);
+					glVertex2i(_xPixelPosHealthBar + _healthBarWidth, _yPixelPosHealthBar + _healthBarHeight);
+					glVertex2i(_xPixelPosHealthBar + _healthBarWidth * _healthPointsPercentage, _yPixelPosHealthBar + _healthBarHeight);
+					glEnd();
+
 					glDisable(GL_STENCIL_TEST);
+
+					string _healthBarStatus = std::to_string(_healthPoints) + " / " + std::to_string(_defaultHealthPoints);
+					
+					int _healthBarStatusWidth;
+					getStringProperties(FontName::SIMPLE_TEXT, _healthBarStatus, &_healthBarStatusWidth, nullptr);
+
+					drawString(
+						_xPixelPosHealthBar + 15 + (_healthBarWidth - 15 * 2 - _healthBarStatusWidth) / 2,
+						_yPixelPosHealthBar + 5,
+						FontName::SIMPLE_TEXT,
+						_healthBarStatus,
+						BUTTON_FONT_COLOR_RGB);
+
+					//glDisable(GL_STENCIL_TEST);
 
 					glDisable(GL_ALPHA_TEST);
 				}
@@ -396,6 +553,54 @@ public:
 
 				glDisable(GL_ALPHA_TEST);
 			}
+
+			/*//ресурсозатратно и некруто TODO
+			int stringWidth, stringHeight;
+			//int** charslocation;
+			getStringProperties(FontName::SIMPLE_TEXT, "999 / 999", &stringWidth, &stringHeight); // , &_charsLocation);
+			int _healthBarWidth = 15 * 2 + stringWidth;
+			int _healthBarHeight = 5 * 2 + stringHeight;
+
+			int _xPixelPosHealthBar = _xPixelPos + (_textureWidth - _healthBarWidth) / 2;
+			int _yPixelPosHealthBar = _yPixelPos - _healthBarHeight - 10;
+
+			int _defaultHealthPoints = UnitTypesData.at(_unitType).getDefaultHealthPoints();
+			int _healthPointsPercentage = _healthPoints / _defaultHealthPoints;
+
+			glEnable(GL_STENCIL_TEST);
+
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			glStencilFunc(GL_NOTEQUAL, 255, 255);
+
+			//красным оставшееся хп
+			//glColor4fv(ENEMY_COLOR_RGB);
+			glColor4f(0.8, 0.2, 0.2, 0.5);
+			glBegin(GL_QUADS);
+			glVertex2i(_xPixelPosHealthBar, _yPixelPosHealthBar);
+			glVertex2i(_xPixelPosHealthBar + _healthBarWidth * _healthPointsPercentage, _yPixelPosHealthBar);
+			glVertex2i(_xPixelPosHealthBar + _healthBarWidth * _healthPointsPercentage, _yPixelPosHealthBar + _healthBarHeight);
+			glVertex2i(_xPixelPosHealthBar, _yPixelPosHealthBar + _healthBarHeight);
+			glEnd();
+			
+			//чёрным недостоющее
+			glColor4f(0, 0, 0, 0.5);
+			glBegin(GL_QUADS);
+			glVertex2i(_xPixelPosHealthBar + _healthBarWidth * _healthPointsPercentage, _yPixelPosHealthBar);
+			glVertex2i(_xPixelPosHealthBar + _healthBarWidth, _yPixelPosHealthBar);
+			glVertex2i(_xPixelPosHealthBar + _healthBarWidth, _yPixelPosHealthBar + _healthBarHeight);
+			glVertex2i(_xPixelPosHealthBar + _healthBarWidth * _healthPointsPercentage, _yPixelPosHealthBar + _healthBarHeight);
+			glEnd();
+
+			glDisable(GL_STENCIL_TEST);
+
+			string _healthBarStatus = std::to_string(_healthPoints) + " / " + std::to_string(_defaultHealthPoints);
+
+			drawString(
+				_xPixelPosHealthBar + 15,
+				_yPixelPosHealthBar + 5,
+				FontName::SIMPLE_TEXT,
+				_healthBarStatus,
+				BUTTON_FONT_COLOR_RGB);*/
 		}
 	}
 
@@ -403,6 +608,17 @@ public:
 		//_onClickCallback();
 		//_isChoosen = true;
 		Battle::Instance().setChosenUnit(this);
+	}
+
+	virtual void onMouseOver(bool mouseOver) override {
+		ActiveGraphicItem::onMouseOver(mouseOver);
+
+		if (mouseOver) {
+			Battle::Instance().setUnitUnderMouse(this);
+		}
+		else {
+			Battle::Instance().setUnitUnderMouse(nullptr);
+		}
 	}
 
 	void setPosition(int xPos, int yPos, bool isLookRight) {
@@ -420,6 +636,34 @@ public:
 
 	unsigned int getPlayer() const {
 		return _player;
+	}
+
+	UnitType getUnitType() const {
+		return _unitType;
+	}
+
+	int getActionPoints() const {
+		return _actionPoints;
+	}
+
+	//уменьшить очки действия, возвращает успешность
+	bool reduceActionPonts(int actionCost) {
+		if (actionCost > _actionPoints) return false;
+		else {
+			_actionPoints -= actionCost;
+			return true;
+		}
+	}
+
+	//уменьшить хп
+	void reduceHealthPonts(int attackPower) {
+		if (_healthPoints <= attackPower) Battle::Instance().killUnit(this);
+		else _healthPoints -= attackPower;
+	}
+
+	void restoreActionPoints() {
+		UnitTypeProperties _UnitTypeProperties = unitTypesData.at(_unitType);
+		_actionPoints = _UnitTypeProperties.getDefaultActionPoints();
 	}
 
 	/*void move(Cell* cell) { //TODO //сделать позицию? отдать передвижение батлфилду? (скорее всего)
@@ -568,7 +812,7 @@ public:
 		int _battleFieldWidth, _battleFieldHeight;
 		Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
 
-		bool _drawMovementMark = _mouseOver && Battle::Instance().getMovementMode()
+		bool _drawMovementMark = _mouseOver && Battle::Instance().getActionMode()
 			&& _xPos >= LEFT_LAYER_THICKNESS_DECORATING_CELLS
 			&& _xPos < _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
 			&& _yPos < _battleFieldHeight - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
@@ -590,7 +834,16 @@ public:
 			}
 
 			if (_drawMovementMark) {
-				if (biomesData.at(_biome).getPassability() && _unit == nullptr) {
+				//не слишком ли далеко клетка
+				Unit* _chosenUnit = Battle::Instance().getChosenUnit();
+				int _xUnitPos, _yUnitPos;
+				_chosenUnit->getPosition(&_xUnitPos, &_yUnitPos, nullptr);
+				int movementDistance = Battle::Instance().getDistanceBetweenCells(
+					_xUnitPos, _yUnitPos, _xPos, _yPos);
+				bool _cellIsTooFar = movementDistance > _chosenUnit->getActionPoints();
+
+				//рисуем нужную марку
+				if (!_cellIsTooFar && biomesData.at(_biome).getPassability() && _unit == nullptr) {
 					int _textureWidth = 0, _textureHeight = 0;
 					getTextureProperties(TextureName::AVAILABLE_MOVEMENT_MARK, &_textureWidth, &_textureHeight);
 					drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos + (CELL_HEIGHT - _textureHeight) / 2, TextureName::AVAILABLE_MOVEMENT_MARK);
@@ -617,8 +870,15 @@ public:
 			}
 		}
 
-		//включено передвижение и зажата правая кнопка мыши
+		//на клетке ничего нет, но включено передвижение и зажата правая кнопка мыши
 		else if (_drawMovementMark) {
+			Unit* _chosenUnit = Battle::Instance().getChosenUnit();
+			int _xUnitPos, _yUnitPos;
+			_chosenUnit->getPosition(&_xUnitPos, &_yUnitPos, nullptr);
+			int movementDistance = Battle::Instance().getDistanceBetweenCells(
+				_xUnitPos, _yUnitPos, _xPos, _yPos);
+			bool _cellIsTooFar = movementDistance > _chosenUnit->getActionPoints();
+
 			int _xPixelPos = 0, _yPixelPos = 0;
 			_xPixelPos = xPixels + _xPos * (CELL_WIDTH * 0.75);
 			if (_xPos % 2 == 0) { //чётный столбец
@@ -628,9 +888,16 @@ public:
 				_yPixelPos = yPixels + _yPos * CELL_HEIGHT;
 			}
 
-			int _textureWidth = 0, _textureHeight = 0;
-			getTextureProperties(TextureName::AVAILABLE_MOVEMENT_MARK, &_textureWidth, &_textureHeight);
-			drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos + (CELL_HEIGHT - _textureHeight) / 2, TextureName::AVAILABLE_MOVEMENT_MARK);
+			if (!_cellIsTooFar) {
+				int _textureWidth = 0, _textureHeight = 0;
+				getTextureProperties(TextureName::AVAILABLE_MOVEMENT_MARK, &_textureWidth, &_textureHeight);
+				drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos + (CELL_HEIGHT - _textureHeight) / 2, TextureName::AVAILABLE_MOVEMENT_MARK);
+			}
+			else {
+				int _textureWidth = 0, _textureHeight = 0;
+				getTextureProperties(TextureName::NOT_AVAILABLE_MOVEMENT_MARK, &_textureWidth, &_textureHeight);
+				drawTexture(_xPixelPos + (CELL_WIDTH - _textureWidth) / 2, _yPixelPos + (CELL_HEIGHT - _textureHeight) / 2, TextureName::NOT_AVAILABLE_MOVEMENT_MARK);
+			}
 		}
 	}
 
@@ -898,12 +1165,15 @@ public:
 		drawCellUnitsAndObjects();
 
 		//подсветка movementMark
-		Battle::Instance().drawMovementMarkBacklight();
+		//Battle::Instance().drawMovementMarkBacklight();
 
 		//отрисовка подсветки (второй раз с прозрачностью) юнитов, чтобы их было видно в кусте, за деревом или камнем
 		//drawCellUnitBacklights();
 		Battle::Instance().drawUnitBacklights();
 		//отрисовка юнитов второй раз с прозрачностью для их видимости сквозь препятствия
+
+		//подсветка movementMark
+		Battle::Instance().drawMovementMarkBacklight();
 	}
 
 	void switchScrolling(bool scrollingState) {
@@ -1060,31 +1330,40 @@ public:
 	}
 
 
-
+	//костыль. надо переделывать логику классов
 	//гарантируется, что передвигаемый юнит ВСЕГДА располагается на существующей клетке
-	void moveUnit(Unit* unit, Cell* destinationCell) {
+	bool moveUnit(Unit* unit, Cell* destinationCell) {
 		if (unit != nullptr && destinationCell != nullptr
 			&& biomesData.at(destinationCell->getBiomeType()).getPassability() 
 			&& destinationCell->getUnit() == nullptr
 		) {
+			//получпем координаты исходной клетки
+			int _xUnitPos, _yUnitPos;
+			bool _unitIsLookRight;
+			unit->getPosition(&_xUnitPos, &_yUnitPos, &_unitIsLookRight);
+
 			//получаем координаты клетки назначения
 			int _xDestinationCellPos, _yDestinationCellPos;
 			destinationCell->getPosition(&_xDestinationCellPos, &_yDestinationCellPos);
 
+			//для проверки на выход за карту
 			int _battleFieldWidth, _battleFieldHeight;
 			Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
 
+			//проверка на выход за карту
 			bool _moveUnit = 
 				_xDestinationCellPos >= LEFT_LAYER_THICKNESS_DECORATING_CELLS
 				&& _xDestinationCellPos < _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
 				&& _yDestinationCellPos < _battleFieldHeight - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
 				&& _yDestinationCellPos >= TOP_LAYER_THICKNESS_DECORATING_CELLS;
 
+			int movementDistance = Battle::Instance().getDistanceBetweenCells(_xUnitPos, _yUnitPos, _xDestinationCellPos, _yDestinationCellPos);
+
+			//проверка превышения лимита передвижения на ход и уменьшение очков действия юнита
+			_moveUnit &= unit->reduceActionPonts(movementDistance);
+
 			if (_moveUnit) {
 				//убрать у текущей ячейки ссылку на юнит
-				int _xUnitPos, _yUnitPos;
-				bool _unitIsLookRight;
-				unit->getPosition(&_xUnitPos, &_yUnitPos, &_unitIsLookRight);
 				_battlefield[_xUnitPos][_yUnitPos]->setUnit(nullptr);
 
 				//утсанавливаем клетке назначения юнит
@@ -1098,10 +1377,60 @@ public:
 
 				//сортируем юниты для обводки
 				Battle::Instance().sortUnitsByBacklightsDrawOrder();
+
+				return true;
 			}
+			//передвижение не удалось
+			else {
+				return false;
+			}
+		}
+		//передвижение не удалось
+		else {
+			return false;
 		}
 		//_battleField[xPos][yPos].setUnit(nullptr);
 		//_battleField[newxPos][newyPos].setUnit(this);
+	}
+
+	//костыль. надо переделывать логику классов
+	bool attackUnit(Unit* attackingUnit, Unit* attackedUnit) {
+		if (attackingUnit->getPlayer() == attackedUnit->getPlayer()) return false; //костыль TODO
+
+		//не слишком ли далеко юнит
+		int _xAttackingUnitPos, _yAttackingUnitPos;
+		attackingUnit->getPosition(&_xAttackingUnitPos, &_yAttackingUnitPos, nullptr);
+
+		int _xAttackedUnitPos, _yAttackedUnitPos;
+		attackedUnit->getPosition(&_xAttackedUnitPos, &_yAttackedUnitPos, nullptr);
+
+		int _attackDistance = Battle::Instance().getDistanceBetweenCells(
+			_xAttackingUnitPos, _yAttackingUnitPos, _xAttackedUnitPos, _yAttackedUnitPos);
+		bool _unitIsTooFar = _attackDistance > unitTypesData.at(attackingUnit->getUnitType()).getAttackRange();
+
+		if (!_unitIsTooFar) {
+			const UnitTypeProperties _unitTypeProperties = unitTypesData.at(attackingUnit->getUnitType());
+
+			bool _attackUnit = attackingUnit->reduceActionPonts(_unitTypeProperties.getAttackActionPointsCost());
+
+			if (_attackUnit) {
+				int _attackPower = _unitTypeProperties.getDefaultAttackPower();
+				attackedUnit->reduceHealthPonts(_attackPower);
+				return true;
+			}
+			//атака не удалась, тк не хватило од
+			else {
+				return false;
+			}
+		}
+		//атака не удалась
+		else {
+			return false;
+		}
+	}
+
+	Cell* getCell(int xPos, int yPos) { //костыль. надо переделывать логику классов
+		return _battlefield[xPos][yPos];
 	}
 };
 
@@ -1110,7 +1439,14 @@ public:
 //---------------------------------------------------------------------------------------------
 //class Battle definition
 
-Battle::Battle() = default;
+// = default;
+Battle::Battle() {
+	int stringWidth, stringHeight;
+	getStringProperties(FontName::SIMPLE_TEXT, "999 / 999", &stringWidth, &stringHeight);
+	_healthBarWidth = stringWidth;
+	_healthBarHeight = stringHeight;
+}
+
 Battle::~Battle() = default;
 
 Battle& Battle::Instance() {
@@ -1120,8 +1456,9 @@ Battle& Battle::Instance() {
 
 void Battle::begin() {
 	if (_battleField == nullptr) { //TODO
+		createBattleInterface();
+
 		_battleField = new BattleField();
-		_turn = 0;
 
 		spawnUnit(); //TODO DEBUG
 	}
@@ -1135,9 +1472,10 @@ void Battle::end() {
 		switchBattleFieldScrolling(false);
 	}
 
-	_movementMode = false;
+	_actionMode = false;
 	//_movementMarkCell = nullptr;
 	_cellUnderMouse = nullptr;
+	_currentTurn = 0;
 
 	//удаляем юнитов
 	for (int i = 0; i < _units.size(); i++) {
@@ -1152,6 +1490,137 @@ void Battle::draw() {
 		_battleField->draw();
 		//switchBattleFieldScrolling(false);
 	}
+}
+
+void Battle::endTurn() {
+	//костыль TODO
+	//действия ИИ
+	for (int i = 0; i < _units.size(); i++) {
+		//ходит каждый юнит ИИ
+		if (_units[i]->getPlayer() != 0) {
+			Unit* _AIUnit = _units[i];
+			int _xAIUnitPos, _yAIUnitPos;
+			_AIUnit->getPosition(&_xAIUnitPos, &_yAIUnitPos, nullptr);
+
+			Unit* _closestPlayerUnit = nullptr;
+			int _closestUnitDistance;
+
+			//поиск ближайшего юнита
+			for (int j = 0; j < _units.size(); j++) {
+				//если юнит игрока
+				if (_units[j]->getPlayer() == 0) {
+					int _xPlayerUnitPos, _yPlayerUnitPos;
+					_units[j]->getPosition(&_xPlayerUnitPos, &_yPlayerUnitPos, nullptr);
+					int _distanaceBeetwennUnit = getDistanceBetweenCells(_xAIUnitPos, _yAIUnitPos, _xPlayerUnitPos, _yPlayerUnitPos);
+
+					if (_closestPlayerUnit != nullptr) {
+						if (_distanaceBeetwennUnit < _closestUnitDistance) {
+							_closestPlayerUnit = _units[j];
+							_closestUnitDistance = _distanaceBeetwennUnit;
+						}
+					}
+					else {
+						_closestPlayerUnit = _units[j];
+						_closestUnitDistance = _distanaceBeetwennUnit;
+					}
+				}
+			}
+
+			//нашли ближайший юнит, чекаем можем ли атаковать
+			if (!_battleField->attackUnit(_AIUnit, _closestPlayerUnit)) {
+				//не можем атаковать, значит двигаемся максимально близко
+				int _xPlayerUnitPos, _yPlayerUnitPos;
+				_closestPlayerUnit->getPosition(&_xPlayerUnitPos, &_yPlayerUnitPos, nullptr);
+
+				bool _cellIsFree = false;
+				Cell* _cell = _battleField->getCell(_xPlayerUnitPos, _yPlayerUnitPos);
+				_cellIsFree = biomesData.at(_cell->getBiomeType()).getPassability() && _cell->getUnit() == nullptr;
+
+				int _xPos = _xPlayerUnitPos, _yPos = _yPlayerUnitPos;
+				int _searchRadius = 1;
+				cout << "new unit" << endl;
+				while (!_cellIsFree) {
+					cout << "new radius: " << _searchRadius << endl;
+					bool noFreeCells = true;
+
+					for (int i = 1; i <= 6 * _searchRadius; i++) {
+						AdjacentCellRelativePos adjacentCellRelativePos;
+
+						int _stage = (i + _searchRadius - 1) / _searchRadius;
+
+						if (i == 1) {
+							adjacentCellRelativePos = AdjacentCellRelativePos::TOP; //всегда 1 раз
+						}
+						else if (_stage == 1) {
+							adjacentCellRelativePos = AdjacentCellRelativePos::RIGHT_TOP; //(_searchRadius - 1) раз
+						}
+						else if (_stage == 2) {
+							adjacentCellRelativePos = AdjacentCellRelativePos::RIGHT_BOTTOM; //_searchRadius раз
+						}
+						else if (_stage == 3) {
+							adjacentCellRelativePos = AdjacentCellRelativePos::BOTTOM; //_searchRadius раз
+						}
+						else if (_stage == 4) {
+							adjacentCellRelativePos = AdjacentCellRelativePos::LEFT_BOTTOM; //_searchRadius раз
+						}
+						else if (_stage == 5) {
+							adjacentCellRelativePos = AdjacentCellRelativePos::LEFT_TOP; //_searchRadius раз
+						}
+						else if (_stage == 6) {
+							adjacentCellRelativePos = AdjacentCellRelativePos::TOP; //_searchRadius раз
+						}
+
+						//получаем координаты соседней ячейки и саму ячейку если она находится 
+						_cell = _battleField->getAdjacentCell(&_xPos, &_yPos, adjacentCellRelativePos);
+
+						if (_cell != nullptr) {
+							cout << "x: " << _xPos << " y: " << _yPos << endl;
+							noFreeCells = false; //если нашлась хотя бы одна внутри поля, то значит искать в следующем радиусе имеет смысл
+							_cellIsFree = biomesData.at(_cell->getBiomeType()).getPassability() && _cell->getUnit() == nullptr;
+
+							int _distanaceBeetwennCells = getDistanceBetweenCells(_xAIUnitPos, _yAIUnitPos, _xPos, _yPos);
+
+							_cellIsFree &= _AIUnit->getActionPoints() >= _distanaceBeetwennCells;
+							//типа стоять в ренже атаки
+							if (_cellIsFree &&  unitTypesData.at(_AIUnit->getUnitType()).getAttackRange() >= _distanaceBeetwennCells) {
+								_cellIsFree &= unitTypesData.at(_AIUnit->getUnitType()).getAttackRange() == _distanaceBeetwennCells;
+							}
+							if (_AIUnit->getActionPoints() >= _distanaceBeetwennCells) {
+								cout << "x: " << _xPos << " y: " << _yPos << " cellIsFree: " << _cellIsFree << endl;;
+							}
+						}
+
+						if (_cellIsFree) break;
+					}
+
+					//проверка на то что мы не вышли за пределы поля //возможно избыточно
+					if (noFreeCells) {
+						cerr << "no free cells for AI unit movement" << endl;
+						break;
+					}
+
+					_searchRadius++;
+				}
+
+				if (_cellIsFree) {
+					_battleField->moveUnit(_AIUnit, _cell);
+				}
+				
+			}
+
+			//попытка сделать вторую атака
+			_battleField->attackUnit(_AIUnit, _closestPlayerUnit);			
+		}
+		
+	}
+
+	//восстанавливаем ОД юнитов
+	for (int i = 0; i < _units.size(); i++) {
+		_units[i]->restoreActionPoints();
+	}
+
+	//следующий ход
+	_currentTurn++;
 }
 
 void Battle::getBattleFieldProperties(int* width, int* height) const {
@@ -1294,63 +1763,91 @@ void Battle::sortUnitsByBacklightsDrawOrder() {
 
 void Battle::drawMovementMarkBacklight() {
 	//if (_movementMarkCell != nullptr) {
-	if (_movementMode && _cellUnderMouse != nullptr) {
-		int _xPos, _yPos;
-		//_movementMarkCell->getPosition(&_xPos, &_yPos);
-		_cellUnderMouse->getPosition(&_xPos, &_yPos);
+	if (_actionMode) {
+		if (_cellUnderMouse != nullptr) {
+			int _xPos, _yPos;
+			//_movementMarkCell->getPosition(&_xPos, &_yPos);
+			_cellUnderMouse->getPosition(&_xPos, &_yPos);
 
-		int _battleFieldWidth, _battleFieldHeight;
-		Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
+			int _battleFieldWidth, _battleFieldHeight;
+			Battle::Instance().getBattleFieldProperties(&_battleFieldWidth, &_battleFieldHeight);
 
-		bool _drawMovementMark = _movementMode
-			&& _xPos >= LEFT_LAYER_THICKNESS_DECORATING_CELLS
-			&& _xPos < _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
-			&& _yPos < _battleFieldHeight - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
-			&& _yPos >= TOP_LAYER_THICKNESS_DECORATING_CELLS;
+			bool _drawMovementMark = _actionMode
+				&& _xPos >= LEFT_LAYER_THICKNESS_DECORATING_CELLS
+				&& _xPos < _battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS
+				&& _yPos < _battleFieldHeight - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS
+				&& _yPos >= TOP_LAYER_THICKNESS_DECORATING_CELLS;
 
-		if (_drawMovementMark) {
-			int _xPixelBattleFieldPos, _yPixelBattleFieldPos;
-			_battleField->getPosition(&_xPixelBattleFieldPos, &_yPixelBattleFieldPos);
+			if (_drawMovementMark) {
+				int _xPixelBattleFieldPos, _yPixelBattleFieldPos;
+				_battleField->getPosition(&_xPixelBattleFieldPos, &_yPixelBattleFieldPos);
 
-			//получаем позицию клетки, на которой нужно нарисовать метку относителньо экрана в пикселях
-			int _xPixelPos = 0, _yPixelPos = 0;
-			_xPixelPos = _xPixelBattleFieldPos + _xPos * (CELL_WIDTH * 0.75);
-			if (_xPos % 2 == 0) { //чётный столбец
-				_yPixelPos = _yPixelBattleFieldPos + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
+				//получаем позицию клетки, на которой нужно нарисовать метку относителньо экрана в пикселях
+				int _xPixelPos = 0, _yPixelPos = 0;
+				_xPixelPos = _xPixelBattleFieldPos + _xPos * (CELL_WIDTH * 0.75);
+				if (_xPos % 2 == 0) { //чётный столбец
+					_yPixelPos = _yPixelBattleFieldPos + (CELL_HEIGHT * 0.5) + _yPos * CELL_HEIGHT;
+				}
+				else { //нечётный стобец
+					_yPixelPos = _yPixelBattleFieldPos + _yPos * CELL_HEIGHT;
+				}
+
+				//не слишком ли далеко клетка
+				int _xUnitPos, _yUnitPos;
+				_chosenUnit->getPosition(&_xUnitPos, &_yUnitPos, nullptr);
+				int movementDistance = Battle::Instance().getDistanceBetweenCells(
+					_xUnitPos, _yUnitPos, _xPos, _yPos);
+				bool _cellIsTooFar = movementDistance > _chosenUnit->getActionPoints();
+
+				//получаем тип метки которую нам надо рисовать
+				TextureName _movementMarkTextureName;
+				//if (biomesData.at(_movementMarkCell->getBiomeType()).getPassability() && _movementMarkCell->getUnit() == nullptr) {
+				if (!_cellIsTooFar && biomesData.at(_cellUnderMouse->getBiomeType()).getPassability() && _cellUnderMouse->getUnit() == nullptr) {
+					_movementMarkTextureName = TextureName::AVAILABLE_MOVEMENT_MARK;
+				}
+				else {
+					_movementMarkTextureName = TextureName::NOT_AVAILABLE_MOVEMENT_MARK;
+				}
+
+				int _textureWidth = 0, _textureHeight = 0;
+				getTextureProperties(_movementMarkTextureName, &_textureWidth, &_textureHeight);
+
+				//рисуем метку полупрозрачной
+				glEnable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_NOTEQUAL, 0);
+
+				glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+				drawTexture(
+					_xPixelPos + (CELL_WIDTH - _textureWidth) / 2,
+					_yPixelPos + (CELL_HEIGHT - _textureHeight) / 2,
+					_movementMarkTextureName,
+					nullptr,
+					TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
+					false, false, 0.6
+				);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+				glDisable(GL_ALPHA_TEST);
 			}
-			else { //нечётный стобец
-				_yPixelPos = _yPixelBattleFieldPos + _yPos * CELL_HEIGHT;
-			}
+		}
 
-			//получаем тип метки которую нам надо рисовать
-			TextureName _movementMarkTextureName;
-			//if (biomesData.at(_movementMarkCell->getBiomeType()).getPassability() && _movementMarkCell->getUnit() == nullptr) {
-			if (biomesData.at(_cellUnderMouse->getBiomeType()).getPassability() && _cellUnderMouse->getUnit() == nullptr) {
-				_movementMarkTextureName = TextureName::AVAILABLE_MOVEMENT_MARK;
-			}
-			else {
-				_movementMarkTextureName = TextureName::NOT_AVAILABLE_MOVEMENT_MARK;
-			}
+		if (_unitUnderMouse != nullptr && _unitUnderMouse->getPlayer() != 0) {
+			int _xCursorPos, _yCursorPos;
+			UserInterface::Instance().getCursorPos(&_xCursorPos, &_yCursorPos);
+
+			TextureName _attackMarkTextureName = TextureName::ATTACK_MARK;
 
 			int _textureWidth = 0, _textureHeight = 0;
-			getTextureProperties(_movementMarkTextureName, &_textureWidth, &_textureHeight);
+			getTextureProperties(_attackMarkTextureName, &_textureWidth, &_textureHeight);
 
-			//рисуем метку полупрозрачной
-			glEnable(GL_ALPHA_TEST);
-			glAlphaFunc(GL_NOTEQUAL, 0);
-
-			glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
 			drawTexture(
-				_xPixelPos + (CELL_WIDTH - _textureWidth) / 2,
-				_yPixelPos + (CELL_HEIGHT - _textureHeight) / 2,
-				_movementMarkTextureName,
+				_xCursorPos - _textureWidth / 2,
+				_yCursorPos - _textureHeight / 2,
+				_attackMarkTextureName,
 				nullptr,
 				TextureScalingByHeightRatioType::MULTIPLYNG_FACTOR, 1,
 				false, false, 0.6
 			);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-			glDisable(GL_ALPHA_TEST);
 		}
 	}
 }
@@ -1404,12 +1901,17 @@ Unit * Battle::getChosenUnit() {
 	return _chosenUnit;
 }
 
-void Battle::switchMovementMode(bool movementMode) {
+void Battle::switchActionMode(bool actionMode) {
 	if (_chosenUnit != nullptr) {
-		_movementMode = movementMode;
+		_actionMode = actionMode;
 
-		if (movementMode == false) {
-			_battleField->moveUnit(_chosenUnit, _cellUnderMouse);
+		if (actionMode == false) {
+			if (_cellUnderMouse != nullptr) {
+				_battleField->moveUnit(_chosenUnit, _cellUnderMouse);
+			}
+			if (_unitUnderMouse != nullptr) {
+				_battleField->attackUnit(_chosenUnit, _unitUnderMouse);
+			}
 		}
 		//cout << "changeMoveMode on:" << movementMode << endl;//debug
 		/*if (movementMode == false) {
@@ -1420,8 +1922,8 @@ void Battle::switchMovementMode(bool movementMode) {
 	}
 }
 
-bool Battle::getMovementMode() {
-	return _movementMode;
+bool Battle::getActionMode() {
+	return _actionMode;
 }
 
 /*void Battle::setMovementMarkCell(Cell* movementMarkCell) {
@@ -1432,12 +1934,20 @@ void Battle::setCellUnderMouse(Cell* cellUnderMouse) {
 	_cellUnderMouse = cellUnderMouse;
 }
 
+void Battle::setUnitUnderMouse(Unit* unitUnderMouse) {
+	_unitUnderMouse = unitUnderMouse;
+}
+
 /*Cell * Battle::getMovementMarkCell() {
 	return _movementMarkCell;
 }*/
 
 Cell * Battle::getCellUnderMouse() {
 	return _cellUnderMouse;
+}
+
+Unit * Battle::getUnitUnderMouse() {
+	return _unitUnderMouse;
 }
 
 bool Battle::getAdjacentCellPos(int* xPos, int* yPos, AdjacentCellRelativePos adjacentCellRelativePos) {
@@ -1478,10 +1988,25 @@ bool Battle::getAdjacentCellPos(int* xPos, int* yPos, AdjacentCellRelativePos ad
 	return true;
 }
 
+int Battle::getDistanceBetweenCells(int xFirstCellPos, int yFirstCellPos, int xSecondCellPos, int ySecondCellPos) {
+	//distance = МАКС(ABS(X); ABS(Y) + ЦЕЛОЕ((ABS(X) + (Y < 0)) / 2)) для x чётного иначе (Y > 0)
+	int xDist = abs(xSecondCellPos - xFirstCellPos);
+	int yDist = abs(ySecondCellPos - yFirstCellPos);
+
+	if (xFirstCellPos % 2 == 0) {
+		return max(xDist, yDist + (xDist + (ySecondCellPos < yFirstCellPos)) / 2);
+	}
+	else {
+		return max(xDist, yDist + (xDist + (ySecondCellPos > yFirstCellPos)) / 2);
+	}
+	return 0;
+}
+
 void Battle::spawnUnit() { //TODO
 	int battleFieldWidth, battleFieldHeight;
 	_battleField->getSize(&battleFieldWidth, &battleFieldHeight);
 
+	//юниты игрока
 	//Unit* _unit = new Unit(4, 10, true, 0);
 	Unit* _unit = new Unit(UnitType::WIZARD, 0);
 	_units.push_back(_unit);
@@ -1503,21 +2028,58 @@ void Battle::spawnUnit() { //TODO
 	);
 
 	//_unit = new Unit(4, 11, true, 0);
-	_unit = new Unit(UnitType::WIZARD, 0);
+	_unit = new Unit(UnitType::WARRIOR, 0);
 	_units.push_back(_unit);
 	_battleField->spawnUnit(
 		_unit, 
-		LEFT_LAYER_THICKNESS_DECORATING_CELLS, 
+		LEFT_LAYER_THICKNESS_DECORATING_CELLS + 1, 
 		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
 		true
 	);
 
+	_unit = new Unit(UnitType::WARRIOR, 0);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(
+		_unit,
+		LEFT_LAYER_THICKNESS_DECORATING_CELLS + 1,
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
+		true
+	);
+
+	//юниты ии
 	//_unit = new Unit(15, 19, true, 1);
 	_unit = new Unit(UnitType::WIZARD, 1);
 	_units.push_back(_unit);
 	_battleField->spawnUnit(
 		_unit, 
 		battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 1, 
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
+		false
+	);
+
+	_unit = new Unit(UnitType::WIZARD, 1);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(
+		_unit,
+		battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 1,
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
+		false
+	);
+
+	_unit = new Unit(UnitType::WARRIOR, 1);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(
+		_unit,
+		battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 2,
+		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
+		false
+	);
+
+	_unit = new Unit(UnitType::WARRIOR, 1);
+	_units.push_back(_unit);
+	_battleField->spawnUnit(
+		_unit,
+		battleFieldWidth - RIGHT_LAYER_THICKNESS_DECORATING_CELLS - 2,
 		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS,
 		false
 	);
@@ -1529,6 +2091,50 @@ void Battle::spawnUnit() { //TODO
 		LEFT_LAYER_THICKNESS_DECORATING_CELLS,
 		(battleFieldHeight - TOP_LAYER_THICKNESS_DECORATING_CELLS - BOTTOM_LAYER_THICKNESS_DECORATING_CELLS) / 2 + TOP_LAYER_THICKNESS_DECORATING_CELLS
 	);
+}
+
+void Battle::getHealthBarSize(int* healthBarWidth, int* healthBarHeight) {
+	if (healthBarWidth != nullptr) *healthBarWidth = _healthBarWidth;
+	if (healthBarHeight != nullptr) *healthBarHeight = _healthBarHeight;
+}
+
+void Battle::killUnit(Unit* killedUnit) {
+	if (_chosenUnit == killedUnit) _chosenUnit = nullptr;
+
+	int _xUnitPos, _yUnitPos;
+	killedUnit->getPosition(&_xUnitPos, &_yUnitPos, nullptr);
+
+	//убрать у текущей ячейки ссылку на юнит
+	_battleField->getCell(_xUnitPos, _yUnitPos)->setUnit(nullptr);
+
+	for (int i = 0; i < _units.size(); i++) {
+		if (_units[i] == killedUnit) {
+			delete _units[i];
+			_units.erase(_units.begin() + i);
+			setUnitUnderMouse(nullptr);
+			UserInterface::Instance().clearCurrentActiveGraphicItem();
+			break;
+		}
+	}
+
+	checkEndBattleCondition();
+	//сортируем юниты для обводки
+	//Battle::Instance().sortUnitsByBacklightsDrawOrder();
+
+
+}
+
+void Battle::checkEndBattleCondition() { //странная TODO
+	int playerUnitCount = 0;
+	int AIUnitCount = 0;
+
+	for (int i = 0; i < _units.size(); i++) {
+		if (_units[i]->getPlayer() == 0) playerUnitCount++;
+		else AIUnitCount++;
+	}
+
+	if (AIUnitCount == 0) ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::WIN);
+	if (playerUnitCount == 0) ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::LOSE);
 }
 
 
@@ -1580,4 +2186,72 @@ void Battle::spawnUnit() { //TODO
 	//	delete[] _textureBorderMask[x];
 	//}
 	//delete[] _textureBorderMask;
+}*/
+
+
+
+
+/*void spawnUnit(Unit* unit, const int xPos, const int yPos, bool isLookRight) {
+	bool _cellIsFree = false;
+	Cell* _cell = _battlefield[xPos][yPos];
+	_cellIsFree = biomesData.at(_cell->getBiomeType()).getPassability() && _cell->getUnit() == nullptr;
+
+	int _xPos = xPos, _yPos = yPos;
+	int _searchRadius = 1;
+	while (!_cellIsFree) {
+		bool noFreeCells = true;
+
+		for (int i = 1; i <= 6 * _searchRadius; i++) {
+			AdjacentCellRelativePos adjacentCellRelativePos;
+
+			int _stage = (i + _searchRadius - 1) / _searchRadius;
+
+			if (i == 1) {
+				adjacentCellRelativePos = AdjacentCellRelativePos::TOP; //всегда 1 раз
+			}
+			else if (_stage == 1) {
+				adjacentCellRelativePos = AdjacentCellRelativePos::RIGHT_TOP; //(_searchRadius - 1) раз
+			}
+			else if (_stage == 2) {
+				adjacentCellRelativePos = AdjacentCellRelativePos::RIGHT_BOTTOM; //_searchRadius раз
+			}
+			else if (_stage == 3) {
+				adjacentCellRelativePos = AdjacentCellRelativePos::BOTTOM; //_searchRadius раз
+			}
+			else if (_stage == 4) {
+				adjacentCellRelativePos = AdjacentCellRelativePos::LEFT_BOTTOM; //_searchRadius раз
+			}
+			else if (_stage == 5) {
+				adjacentCellRelativePos = AdjacentCellRelativePos::LEFT_TOP; //_searchRadius раз
+			}
+			else if (_stage == 6) {
+				adjacentCellRelativePos = AdjacentCellRelativePos::TOP; //_searchRadius раз
+			}
+
+			//получаем координаты соседней ячейки и саму ячейку если она находится 
+			_cell = getAdjacentCell(&_xPos, &_yPos, adjacentCellRelativePos);
+
+			if (_cell != nullptr) {
+				//если нашлась хотя бы одна внутри поля, то значит искать в следующем радиусе имеет смысл
+				noFreeCells = false; 
+				_cellIsFree = biomesData.at(_cell->getBiomeType()).getPassability() 
+					&& _cell->getUnit() == nullptr;
+			}
+
+			if (_cellIsFree) break;
+		}
+
+		//проверка на то что мы не вышли за пределы поля
+		if (noFreeCells) {
+			cerr << "no free cells for unit spawn" << endl;
+			return;
+		}
+
+		_searchRadius++;
+	}
+
+	if (_cellIsFree) {
+		unit->setPosition(_xPos, _yPos, isLookRight);
+		_cell->setUnit(unit);
+	}
 }*/

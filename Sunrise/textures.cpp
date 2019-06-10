@@ -21,7 +21,10 @@ const map<const TextureName, const string> textureFilenames = {
 	{TextureName::SHADOW, "resources/textures/shadow.png"},
 	{TextureName::WIZARD, "resources/textures/wizard.png"},
 	{TextureName::WIZARD_BORDER, "resources/textures/wizard_border.png"},
+	{TextureName::WARRIOR, "resources/textures/warrior.png"},
+	{TextureName::WARRIOR_BORDER, "resources/textures/warrior_border.png"},
 	{TextureName::AVAILABLE_MOVEMENT_MARK, "resources/textures/availableMovementMark.png"},
+	{TextureName::ATTACK_MARK, "resources/textures/attackMark.png"},
 	{TextureName::NOT_AVAILABLE_MOVEMENT_MARK, "resources/textures/notAvailableMovementMark.png"}
 };
 
@@ -1044,3 +1047,80 @@ bool** const getTextureControlField(
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 //}
+
+/*void drawTexture(
+	const int xPos, const int yPos,
+	const TextureName textureName,
+	ActiveGraphicItem* activeGraphicItem,
+	const TextureScalingByHeightRatioType scalingByHeightRatioType,
+	const float scalingHeightFactor,
+	const bool flipHorizontal,
+	const bool flipVertical,
+	float transparency
+) {
+	auto _textureData = texturesData.find(textureName);
+	if (_textureData != texturesData.end()) {
+		TextureProperties _textureProperties = _textureData->second;
+
+		float _ratio;
+		int _width, _height;
+
+		_getTextureRatioAndSize(
+			_textureProperties,
+			scalingByHeightRatioType,
+			scalingHeightFactor,
+			&_ratio, &_width, &_height);
+
+		int leftTexCoord = 0;
+		int rightTexCoord = 1;
+		int topTexCoord = 0;
+		int bottomTexCoord = 1;
+
+		if (flipHorizontal) {
+			leftTexCoord = 1;
+			rightTexCoord = 0;
+		}
+
+		if (flipVertical) {
+			int topTexCoord = 1;
+			int bottomTexCoord = 0;
+		}
+
+		if (transparency < 0) transparency = 0;
+		if (transparency > 1) transparency = 1;
+
+		glColor4f(1, 1, 1, transparency); //чтобы текстура имела натуральный цвет
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, _textureProperties.ID);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //сглаживание при уменьшении
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //сглаживание при увеличении - по ближайшему пикселю
+
+		glBegin(GL_QUADS);
+		glTexCoord2i(leftTexCoord, topTexCoord);		glVertex2i(xPos, yPos);
+		glTexCoord2i(rightTexCoord, topTexCoord);		glVertex2i(xPos + _width, yPos);
+		glTexCoord2i(rightTexCoord, bottomTexCoord);	glVertex2i(xPos + _width, yPos + _height);
+		glTexCoord2i(leftTexCoord, bottomTexCoord);	glVertex2i(xPos, yPos + _height);
+		glEnd();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
+
+		if (activeGraphicItem != nullptr) {
+			bool** const _textureControlField = _getTextureControlField(
+				textureName,
+				_width,
+				_height,
+				_textureProperties.controlField,
+				_ratio,
+				flipHorizontal,
+				flipVertical
+			);
+
+			//рисуем активную область
+			UserInterface::Instance().setActiveGraphicItemTextureControlField(
+				xPos, _width, yPos, _height, _textureControlField, activeGraphicItem);
+		}
+	}
+}*/

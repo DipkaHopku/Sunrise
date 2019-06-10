@@ -61,6 +61,16 @@ void gameplayProcessing() {
 		}*/
 
 		break;
+	
+	case ApplicationState::WIN:
+		drawTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, nullptr,
+			TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
+		break;
+
+	case ApplicationState::LOSE:
+		drawTexture(0, 0, TextureName::MAIN_MENU_BACKGROUND, nullptr,
+			TextureScalingByHeightRatioType::PIXELS_NUMBER, _windowHeight);
+		break;
 
 	case ApplicationState::LOAD_MENU :
 		//TODO

@@ -4,11 +4,14 @@
 #include <iostream>
 #include <ctime>
 #include <utility>
+#include <cmath>
+#include <algorithm>
 
 #include "userInterface.h"
 #include "textures.h"
 
 using std::swap;
+using std::max;
 
 enum class BiomeType {
 	GRASS,
@@ -30,7 +33,8 @@ enum class AdjacentCellRelativePos {
 };
 
 enum class UnitType {
-	WIZARD
+	WIZARD,
+	WARRIOR
 };
 
 class Unit;
@@ -50,11 +54,15 @@ private:
 	vector<Unit*> _units;
 
 	Unit* _chosenUnit = nullptr;
-	bool _movementMode = false;
+	bool _actionMode = false;
 	Cell* _cellUnderMouse = nullptr;
+	Unit* _unitUnderMouse = nullptr;
 	//Cell* _movementMarkCell = nullptr;
 
-	int _turn;
+	int _currentTurn = 0;
+
+	int _healthBarWidth;
+	int _healthBarHeight;
 
 	Battle();
 	~Battle();
@@ -69,6 +77,8 @@ public:
 	void end();
 
 	void draw();
+
+	void endTurn();
 
 	void getBattleFieldProperties(int*, int*) const;
 
@@ -100,19 +110,38 @@ public:
 
 	Unit* getChosenUnit();
 
-	void switchMovementMode(bool);
+	void switchActionMode(bool);
 
 	//void setChosenUnit(Unit*);
 
-	bool getMovementMode();
+	bool getActionMode();
 
 	//void setMovementMarkCell(Cell*);
 	void setCellUnderMouse(Cell*);
 
+	void setUnitUnderMouse(Unit*);
+
 	//Cell* getMovementMarkCell();
 	Cell* getCellUnderMouse();
 
+	Unit* getUnitUnderMouse();
+
 	bool getAdjacentCellPos(int*, int*, AdjacentCellRelativePos);
 
+	/*
+	arguments:
+	#1 - xFirstCellPos
+	#2 - yFirstCellPos
+	#3 - xSecondCellPos
+	#4 - ySecondCellPos
+	*/
+	int getDistanceBetweenCells(int, int, int, int);
+
 	void spawnUnit(); //TODO spawnUnits?
+
+	void getHealthBarSize(int*, int*);
+
+	void killUnit(Unit*);
+
+	void checkEndBattleCondition();
 };

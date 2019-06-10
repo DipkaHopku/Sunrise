@@ -49,6 +49,8 @@ void callback_exitButton_onClick();
 void callback_backButton_onClick();
 void callback_applyButton_onClick();
 void callback_exitToMainMenuButton_onClick();
+void callback_endTurnButton_onClick();
+//void callback_backToMainMenuButton_onClick();
 
 const map<const ButtonType, const ButtonProperties> buttonsData = {
 	{ButtonType::START, ButtonProperties(	"Start",	FontName::BUTTON,	callback_startButton_onClick)},
@@ -56,7 +58,9 @@ const map<const ButtonType, const ButtonProperties> buttonsData = {
 	{ButtonType::OPTIONS, ButtonProperties(	"Options",	FontName::BUTTON,	callback_optionsButton_onClick)},
 	{ButtonType::EXIT, ButtonProperties(	"Exit",		FontName::BUTTON,	callback_exitButton_onClick)},
 	{ButtonType::BACK, ButtonProperties(	"Back",		FontName::BUTTON,	callback_backButton_onClick)},
-	{ButtonType::APPLY, ButtonProperties(	"Apply",	FontName::BUTTON,	callback_applyButton_onClick)}
+	{ButtonType::APPLY, ButtonProperties(	"Apply",	FontName::BUTTON,	callback_applyButton_onClick)},
+	{ButtonType::END_TURN, ButtonProperties("End turn",	FontName::BUTTON,	callback_endTurnButton_onClick)},
+	{ButtonType::BACK_TO_MAIN_MENU, ButtonProperties("Exit to main menu",	FontName::BUTTON,	callback_exitToMainMenuButton_onClick)}
 };
 
 
@@ -117,7 +121,9 @@ public:
 const map<const LabelType, const LabelProperties> labelsData = {
 	{LabelType::TITLE, LabelProperties(		"Sunrise",		FontName::TITLE)},
 	{LabelType::OPTIONS, LabelProperties(	"Options",		FontName::BUTTON)},
-	{LabelType::FULLSCREEN, LabelProperties("Fullscreen:",	FontName::SIMPLE_TEXT)}
+	{LabelType::FULLSCREEN, LabelProperties("Fullscreen:",	FontName::LABEL)},
+	{LabelType::LOSE, LabelProperties(		"Lose",			FontName::TITLE)},
+	{LabelType::WIN, LabelProperties(		"Win",			FontName::TITLE)}
 };
 
 
@@ -300,8 +306,13 @@ void UserInterface::setCursorPos(int xCursorPos, int yCursorPos) {
 				_currentActiveGraphicItem->onMouseOver(false);
 			} //иначе ничего делать не надо
 
-			if (_activeGrapicItem != nullptr) {
-				_activeGrapicItem->onMouseOver(true);
+			if (_activeGrapicItem != nullptr) { //костыль багает при уничтожении юнита
+				try {
+					_activeGrapicItem->onMouseOver(true);
+				}
+				catch (int KOSTILI) {
+
+				}
 			}
 
 			_currentActiveGraphicItem = _activeGrapicItem;
@@ -530,9 +541,51 @@ bool UserInterface::setApplicationStateNext(ApplicationState applicationStateNex
 		) {
 		_currentActiveGraphicItem = nullptr;
 		clearControlField();
-		_applicationStateNext = applicationStateNext; //= ApplicationState::BATTLE
+		_applicationStateNext = applicationStateNext; //= ApplicationState::MAIN_MENU
 		createMainMenu();
 		Battle::Instance().end();
+		return true;
+	}
+
+	else if (_applicationState == ApplicationState::BATTLE
+		&& applicationStateNext == ApplicationState::WIN
+		) {
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
+		_applicationStateNext = applicationStateNext; //= ApplicationState::WIN
+		createWinMenu();
+		Battle::Instance().end();
+		return true;
+	}
+
+	else if (_applicationState == ApplicationState::WIN
+		&& applicationStateNext == ApplicationState::MAIN_MENU
+		) {
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
+		_applicationStateNext = applicationStateNext; //= ApplicationState::MAIN_MENU
+		createMainMenu();
+		return true;
+	}
+
+	else if (_applicationState == ApplicationState::BATTLE
+		&& applicationStateNext == ApplicationState::LOSE
+		) {
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
+		_applicationStateNext = applicationStateNext; //= ApplicationState::LOSE
+		createLoseMenu();
+		Battle::Instance().end();
+		return true;
+	}
+
+	else if (_applicationState == ApplicationState::LOSE
+		&& applicationStateNext == ApplicationState::MAIN_MENU
+		) {
+		_currentActiveGraphicItem = nullptr;
+		clearControlField();
+		_applicationStateNext = applicationStateNext; //= ApplicationState::MAIN_MENU
+		createMainMenu();
 		return true;
 	}
 
@@ -545,6 +598,22 @@ ApplicationState UserInterface::getApplicationStateNext() const {
 
 void UserInterface::createDialogWindow() const {
 	//продолжаем рисовать состояние из которого вызывается диалог, но не даём его использовать
+}
+
+void UserInterface::setOrientationAndAligns(Orientation orientation, HorizontalAlign horizontalAlign, VerticalAlign verticalAlign) {
+	_orientation = orientation;
+	_horizontalAlign = horizontalAlign;
+	_verticalAlign = verticalAlign;
+}
+
+void UserInterface::resetOrientationAndAligns() {
+	_orientation = Orientation::VERTICAL;
+	_horizontalAlign = HorizontalAlign::MIDDLE;
+	_verticalAlign = VerticalAlign::MIDDLE;
+}
+
+void UserInterface::clearCurrentActiveGraphicItem() {
+	_currentActiveGraphicItem = nullptr;
 }
 
 
@@ -1206,7 +1275,7 @@ public:
 		_marginSize = marginSize;
 
 		int _simpleTextSize;
-		getStringProperties(FontName::SIMPLE_TEXT, "A", nullptr, &_simpleTextSize);
+		getStringProperties(FontName::LABEL, "A", nullptr, &_simpleTextSize);
 		_simpleTextSize *= 1.25;
 		//if (_simpleTextSize > 86) _simpleTextSize = 86; //у линий есть предел ширины в 10 пикселей
 		_width = _simpleTextSize;
@@ -1236,6 +1305,8 @@ public:
 //functions
 
 void createMainMenu() {
+	UserInterface::Instance().resetOrientationAndAligns();
+
 //UIItemsContainer* createMainMenu() {
 	UIItemsContainer* _mainMenuItemsContainer = new UIItemsContainer(
 		//nullptr,
@@ -1269,6 +1340,8 @@ void createMainMenu() {
 }
 
 void createOptionsMenu() {
+	UserInterface::Instance().resetOrientationAndAligns();
+
 	UIItemsContainer* _optionsMenuItemsContainer = new UIItemsContainer(
 		Orientation::VERTICAL,
 		VerticalAlign::MIDDLE,
@@ -1316,6 +1389,58 @@ void createOptionsMenu() {
 
 
 
+void createBattleInterface() {
+	UserInterface::Instance().setOrientationAndAligns(Orientation::VERTICAL, HorizontalAlign::RIGHT, VerticalAlign::BOTTOM);
+
+	UIItemsContainer* _battleInterfaceItemsContainer = new UIItemsContainer(
+		Orientation::VERTICAL,
+		VerticalAlign::MIDDLE,
+		HorizontalAlign::MIDDLE
+	);
+
+	_battleInterfaceItemsContainer->addUIItem(new Button(ButtonType::END_TURN, 10, 10));
+
+	UserInterface::Instance().setUIItemsContainer(_battleInterfaceItemsContainer);
+}
+
+
+
+void createWinMenu() {
+	UserInterface::Instance().resetOrientationAndAligns();
+
+	UIItemsContainer* _winMenuItemsContainer = new UIItemsContainer(
+		Orientation::VERTICAL,
+		VerticalAlign::MIDDLE,
+		HorizontalAlign::MIDDLE
+	);
+
+	_winMenuItemsContainer->addUIItem(new Label(LabelType::WIN, 0, 80));
+
+	_winMenuItemsContainer->addUIItem(new Button(ButtonType::BACK_TO_MAIN_MENU, 10, 80));
+
+	UserInterface::Instance().setUIItemsContainer(_winMenuItemsContainer);
+}
+
+
+
+void createLoseMenu() {
+	UserInterface::Instance().resetOrientationAndAligns();
+
+	UIItemsContainer* _loseMenuItemsContainer = new UIItemsContainer(
+		Orientation::VERTICAL,
+		VerticalAlign::MIDDLE,
+		HorizontalAlign::MIDDLE
+	);
+
+	_loseMenuItemsContainer->addUIItem(new Label(LabelType::LOSE, 0, 80));
+
+	_loseMenuItemsContainer->addUIItem(new Button(ButtonType::BACK_TO_MAIN_MENU, 10, 80));
+
+	UserInterface::Instance().setUIItemsContainer(_loseMenuItemsContainer);
+}
+
+
+
 //---------------------------------------------------------------------------------------------
 //buttons callbacks
 
@@ -1353,6 +1478,14 @@ void callback_applyButton_onClick() {
 void callback_exitToMainMenuButton_onClick() {
 	ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::MAIN_MENU);
 }
+
+void callback_endTurnButton_onClick() {
+	Battle::Instance().endTurn();
+}
+
+/*void callback_backToMainMenuButton_onClick() {
+	ApplicationStatePlanningController::setApplicationStateNext(ApplicationState::MAIN_MENU);
+}*/
 
 
 
@@ -1424,13 +1557,13 @@ void callback_mouseButton(GLFWwindow *window, const int button, const int action
 
 	else if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS) {
 		if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::BATTLE) {
-			Battle::Instance().switchMovementMode(true);
+			Battle::Instance().switchActionMode(true);
 		}
 	}
 
 	else if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE) {
 		if (ApplicationStatePlanningController::getApplicationState() == ApplicationState::BATTLE) {
-			Battle::Instance().switchMovementMode(false);
+			Battle::Instance().switchActionMode(false);
 		}
 	}
 }

@@ -30,6 +30,7 @@ const float BUTTON_FONT_COLOR_RGB[4] = { 255.f/255, 255.f/255, 255.f/255, 255.f/
 enum class FontName {
 	TITLE,
 	BUTTON,
+	LABEL,
 	SIMPLE_TEXT
 };
 

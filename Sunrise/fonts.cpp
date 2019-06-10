@@ -33,16 +33,20 @@ public:
 const map<const FontName, const FontLoadProperties> fontsLoadData = {
 	{FontName::TITLE, FontLoadProperties(
 		"resources/maturasc.ttf", 
-		"Sunrise", 
+		"SunriseWLo", 
 		128)},
 	{FontName::BUTTON, FontLoadProperties(
 		"resources/maturasc.ttf",
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ",
 		36)},
-	{FontName::SIMPLE_TEXT, FontLoadProperties(
+	{FontName::LABEL, FontLoadProperties(
 		"resources/maturasc.ttf",
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:-,. ",
 		24)},
+	{FontName::SIMPLE_TEXT, FontLoadProperties(
+		"resources/JoystixMonospace-Regular.ttf",
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:-,./ ",
+		8)}
 	//"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"
 };
 
@@ -420,4 +424,79 @@ void drawString( //позиции для отрисовки каждого символа должны быть известны до
 		bitmapBufferWidth,
 		bitmapBufferHeight
 	);
+}*/
+
+
+
+
+/*void loadFont(FontName fontname, FT_Library& library, int DPI) {
+	FontLoadProperties fontLoadProperties = fontsLoadData.at(fontname);
+
+	// Шрифт
+	FT_Face face;
+
+	// Загрузка шрифта
+	if (FT_New_Face(library, fontLoadProperties.getFilename().c_str(), 0, &face)) {
+		std::cerr << "ERROR::FREETYPE: Failed to load font" << endl;
+	}
+
+	// FreeType измеряет размер шрифта в терминах 1/64 пикселя.
+	// Для того чтобы сделать шрифт выстой h пикселей, мы запрашиваем размер h*64.
+	// (h << 6 тоже самое что и h*64)
+	FT_Set_Char_Size(face, fontLoadProperties.getCharSize() << 6, 0, DPI, 0);
+
+	FontProperties fontProperties;
+
+	for (int i = 0; i < fontLoadProperties.getChars().length(); i++) {
+		// Код символа (юникод)
+		const FT_ULong charCode = fontLoadProperties.getChars()[i];
+
+		// Загрузка глифа из шрифта с его отрисовкой
+		if (FT_Load_Char(face, charCode, FT_LOAD_RENDER)) {
+			std::cerr << "Error: Failed to load Glyph of char '" 
+				<< (char)charCode << "' from file '" 
+				<< fontLoadProperties.getFilename() << "'" << endl;
+		}
+
+		// Получение готового к использованию глифа
+		FT_GlyphSlot glyph = face->glyph;
+
+		CharProperties charProperties;
+
+		charProperties.width = glyph->bitmap.width;
+		charProperties.height = glyph->bitmap.rows;
+
+		charProperties.bearingX = glyph->bitmap_left;
+		charProperties.bearingY = glyph->bitmap_top;
+		charProperties.advance = glyph->advance.x / 64; //возвращает в 1/64 пикселя
+
+		auto _bitmapBuffer = glyph->bitmap.buffer;
+		auto _data = new unsigned char[charProperties.width * charProperties.height * 4];
+		for (int i = 0; i < charProperties.width * charProperties.height; i++) {
+			//белый цвет с альфой, затем можно будет перемножать его с помощью 
+			//матрицы glColor и получать любой другой без потери альфы
+			_data[i * 4] = 255;
+			_data[i * 4 + 1] = 255;
+			_data[i * 4 + 2] = 255;
+			_data[i * 4 + 3] = _bitmapBuffer[i];
+		}
+		charProperties.textureID = SOIL_create_OGL_texture(
+			_data, 
+			charProperties.width, 
+			charProperties.height, 
+			4, 
+			SOIL_CREATE_NEW_ID, 
+			SOIL_FLAG_DDS_LOAD_DIRECT);
+		delete[] _data;
+
+		fontProperties.setIndents(
+			charProperties.bearingY, 
+			charProperties.height - charProperties.bearingY);
+		fontProperties.addCharProperties(charCode, &charProperties);
+	}
+
+	fontsData.insert(pair<FontName, FontProperties>(fontname, fontProperties));
+
+	// Удаление шрифта
+	FT_Done_Face(face);
 }*/

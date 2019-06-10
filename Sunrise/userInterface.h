@@ -13,6 +13,7 @@
 
 #include "fonts.h"
 #include "gameplay.h"
+#include "battle.h"
 
 using std::map;
 using std::string;
@@ -35,7 +36,9 @@ enum class ApplicationState {
 	MAIN_MENU,
 	BATTLE,
 	LOAD_MENU,
-	OPTIONS
+	OPTIONS,
+	WIN,
+	LOSE
 };
 
 enum class ButtonType {
@@ -44,7 +47,9 @@ enum class ButtonType {
 	OPTIONS,
 	EXIT,
 	BACK,
-	APPLY
+	APPLY,
+	END_TURN,
+	BACK_TO_MAIN_MENU
 };
 
 enum class CheckBoxType {
@@ -54,7 +59,9 @@ enum class CheckBoxType {
 enum class LabelType {
 	TITLE,
 	OPTIONS,
-	FULLSCREEN
+	FULLSCREEN,
+	LOSE,
+	WIN
 };
 
 enum class Orientation {
@@ -122,6 +129,8 @@ static class ApplicationStatePlanningController {
 	friend void callback_optionsButton_onClick();
 	friend void callback_backButton_onClick();
 	friend void callback_exitToMainMenuButton_onClick();
+	//friend void Battle::checkEndBattleCondition();
+	friend class Battle; //костыль TODO
 	
 	friend void callback_key(GLFWwindow*, const int, const int, const int, const int);
 	friend void callback_mouseButton(GLFWwindow*, const int, const int, const int);
@@ -248,6 +257,12 @@ public:
 	void drawUserInterface() const;
 
 	void createDialogWindow() const;
+
+	void setOrientationAndAligns(Orientation, HorizontalAlign, VerticalAlign);
+
+	void resetOrientationAndAligns();
+
+	void clearCurrentActiveGraphicItem(); //костыль для удаления юнита
 };
 
 
@@ -417,6 +432,11 @@ void createMainMenu();
 
 void createOptionsMenu();
 
+void createBattleInterface();
+
+void createWinMenu();
+
+void createLoseMenu();
 
 //---------------------------------------------------------------------------------------------
 //callbacks declaration
